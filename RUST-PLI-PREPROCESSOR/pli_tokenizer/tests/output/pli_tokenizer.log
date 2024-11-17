@@ -1,0 +1,16 @@
+Processing file: ../tests/input/valid_file.pp
+Line 1: ["%IF", "DEBUG", "%THEN", ";"]
+Line 1: PASS
+Line 2: ["DISPLAY", "(", "\"Debug", "mode", "is", "enabled", ".", "\"", ")", ";"]
+Line 2: Non-preprocessor line
+Line 3: ["%ENDIF", ";"]
+Line 3: PASS
+Line 5: ["SET", "A", "=", "'Hello, World!'", ";"]
+Line 5: Non-preprocessor line
+Line 6: ["%COMMENT", "This", "is", "a", "test", "comment", ";"]
+Line 6: PASS
+
+Summary:
+Total lines processed: 5
+Passes: 3
+Failures: 0
