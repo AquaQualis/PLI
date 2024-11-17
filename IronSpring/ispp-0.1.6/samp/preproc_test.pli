@@ -1,0 +1,103 @@
+/* preproc_test.pli -- PL/I Preprocessor test program                */
+/*********************************************************************/
+/*            Iron Spring PL/I Compiler                              */
+/*            Preprocessor test program                              */
+/*                                                                   */
+/* Function: preproc_test does no useful work.                       */
+/*           Its purpose is to test all preprocessor statements.     */
+/*                                                                   */
+/*           No attempt is made to test possible error conditions.   */
+/*                                                                   */
+/*           Strictly speaking it does not have to be in the form    */
+/*           of a valid PL/I program. Any sequence of data not       */
+/*           containing '%' characters outside of PL/I comments      */
+/*           and character strings '...' or "..."                    */
+/*           is allowed, except that comments and character strings  */
+/*           must be properly terminated.                            */
+/*           (to code a '%', use two percents: '%%'.                 */
+/*                                                                   */
+/*********************************************************************/
+preproc_test: proc;
+  /* Declare a couple of normal variables to code valid statements   */
+  dcl     fixed               fixed bin(31);
+  dcl     char                character(1024)     varying;
+ 
+% /* Preprocessor procedures. These can be placed anywhere in the  */
+  /* source text.                                                  */
+  /* Note on comments: Comments within preprocessor procedures or  */
+  /* on preprocessor statements will not appear in the output text.*/ ;
+ 
+%add: proc(one,two,three) statement returns(fixed);
+  dcl (one,two,three) fixed;
+  if ¬parmset(one)   then note('Argument "one" missing',4);
+  if ¬parmset(two)   then note('Argument "two" missing',4);
+  if ¬parmset(three) then note('Argument "three" missing',4);
+  return(one+two+three);
+  %end add;
+%activate add;
+
+%declare char_p entry; 
+%char_p: proc(str) returns(char);
+  dcl str character;
+  note(str,0);
+  return( comment(str) );
+  %end char_p;
+
+% /* Declare some preprocessor variables                           */ ;
+%declare (alpha,beta,gamma) character;
+%declare (alef,beit,gimel)  fixed;
+%declare (quote,comment)    builtin;
+%declare (date,time)        builtin;
+%declare counter            builtin;
+%declare compiletime        builtin;
+%declare (index,length,substr)
+                            builtin;
+
+  /* Preprocessor Type-3 DO-statement    */
+  /* with ITERATE and LEAVE statements   */
+  /* prints values 1,2,4,5,6             */
+%x: do alef=1 to 10;
+  %do;
+     %if alef=3 %then %iterate x;
+  %end;     
+  put skip list( quote(Do repetition alef) );
+  %if alef=6 %then %leave;
+  %end;
+
+  /* Preprocessor procedure invocation   */       
+  /* with both positional and keyword    */
+  /* arguments                           */
+  char = char_p(abc);
+  /* Note the two ';' at then end of args for a statement proc */
+  fixed = add(9,8,7);;   /* 9+8+7=24 */
+  fixed = add(6,5);;   /* 6+5+0=11 */
+  fixed = add one(1) two(2) three(3);;   /* 1+2+3=6  */
+
+  /* Activate/Deactivate                                    */
+  /* date and time builtins not defined in IBM preprocessor */
+  %deactivate char_p;
+  char = char_p(x);       /* does not invoke proc  */
+  %activate char_p;
+  char = char_p(y);     /* comment 'y' */
+  %alpha = char_p(' This is a comment ');
+  alpha
+
+  /* Test builtins */
+  put skip list(quote(compiletime)); /* compiletime */
+  fixed  = counter;                      /* counter 1 */
+  %alpha = counter                      /* counter 2 */ ;
+  %alef  = length(alpha);
+  put skip list('length of counter ' || quote(alpha) ' is' || alef); /* length */
+  %alpha = 'abcdef';
+  %beit  = index(alpha,'c');
+  put skip list('index of c in ' || quote(alpha) ' is' || beit);    /* index */
+  %beta = substr(alpha,3,2); 
+  put skip list( quote(beta) );               /* substr('abcdef',3,2) */
+
+  /* date and time builtins are not supported by IBM PL/I preprocessors */
+  /* The following two statements will generate errors                  */
+  char = quote(time); /* time */
+  char = quote(date); /* date */
+
+
+  end preproc_test;

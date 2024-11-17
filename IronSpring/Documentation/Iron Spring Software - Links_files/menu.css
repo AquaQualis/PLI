@@ -1,0 +1,9 @@
+ *#bdy  { font-family: "helvetica", "arial", "sans-serif" }
+ *#em   { font-size: larger; font-weight: bold; color: Red }
+ *#title { font-family: "helvetica", "arial", "sans-serif"; font-size: 36px }
+ *.menu  { font-weight: bold; background-color: Blue; cursor: pointer; color: White }
+ *.inact { font-weight: bold; background-color: Gainsboro; color: Black }
+ A.menu:link {font-weight: bold; text-decoration: none; color: White; 
+		background-color: Blue }
+ A.menu:visited {font-weight: bold; text-decoration: none; color: White;
+		background-color: Blue }

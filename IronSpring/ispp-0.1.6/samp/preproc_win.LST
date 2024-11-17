@@ -1,0 +1,123 @@
+5639-D65  IBM(R) VisualAge(TM) PL/I for Windows(R)  V2.R1.07                                   2021.02.19 13:23:01   Page     1
+
+
+MACRO Source
+
+ Line.File
+
+    1.1     /* preproc_test.pli -- PL/I Preprocessor test program                */
+    2.1     /*********************************************************************/
+    3.1     /*            Iron Spring PL/I Compiler                              */
+    4.1     /*            Preprocessor test program                              */
+    5.1     /*                                                                   */
+    6.1     /* Function: preproc_test does no useful work.                       */
+    7.1     /*           Its purpose is to test all preprocessor statements.     */
+    8.1     /*                                                                   */
+    9.1     /*           No attempt is made to test possible error conditions.   */
+   10.1     /*                                                                   */
+   11.1     /*           Strictly speaking it does not have to be in the form    */
+   12.1     /*           of a valid PL/I program. Any sequence of data not       */
+   13.1     /*           containing '%' characters outside of PL/I comments      */
+   14.1     /*           and character strings '...' or "..."                    */
+   15.1     /*           is allowed, except that comments and character strings  */
+   16.1     /*           must be properly terminated.                            */
+   17.1     /*           (to code a '%', use two percents: '%%'.                 */
+   18.1     /*                                                                   */
+   19.1     /*********************************************************************/
+   20.1     preproc_test: proc;
+   21.1       /* Declare a couple of normal variables to code valid statements   */
+   22.1       dcl     fixed               fixed bin(31);
+   23.1       dcl     char                character(1024)     varying;
+   24.1
+   25.1     % /* Preprocessor procedures. These can be placed anywhere in the  */
+   26.1       /* source text.                                                  */
+   27.1       /* Note on comments: Comments within preprocessor procedures or  */
+   28.1       /* on preprocessor statements will not appear in the output text.*/ ;
+   29.1
+   30.1     %add: proc(one,two,three) statement returns(fixed);
+   31.1       dcl (one,two,three) fixed;
+   32.1       if ¬parmset(one)   then note('Argument "one" missing',4);
+   33.1       if ¬parmset(two)   then note('Argument "two" missing',4);
+   34.1       if ¬parmset(three) then note('Argument "three" missing',4);
+   35.1       return(one+two+three);
+   36.1       %end add;
+   37.1     %activate add;
+   38.1
+   39.1     %declare char_p entry;
+   40.1     %char_p: proc(str) returns(char);
+   41.1       dcl str character;
+   42.1       note(str,0);
+   43.1       return( comment(str) );
+   44.1       %end char_p;
+   45.1
+   46.1     % /* Declare some preprocessor variables                           */ ;
+   47.1     %declare (alpha,beta,gamma) character;
+   48.1     %declare (alef,beit,gimel)  fixed;
+   49.1     %declare (quote,comment)    builtin;
+   50.1     %declare (date,time)        builtin;
+   51.1     %declare counter            builtin;
+   52.1     %declare compiletime        builtin;
+   53.1     %declare (index,length,substr)
+   54.1                                 builtin;
+
+5639-D65  IBM(R) VisualAge(TM) PL/I for Windows(R)  V2.R1.07                                   2021.02.19 13:23:01   Page     2
+
+   55.1
+   56.1       /* Preprocessor Type-3 DO-statement    */
+   57.1       /* with ITERATE and LEAVE statements   */
+   58.1       /* prints values 1,2,4,5,6             */
+   59.1     %x: do alef=1 to 10;
+   60.1       %do;
+   61.1          %if alef=3 %then %iterate x;
+   62.1       %end;
+   63.1       put skip list( quote(Do repetition alef) );
+   64.1       %if alef=6 %then %leave x;
+   65.1       %end;
+   66.1
+   67.1       /* Preprocessor procedure invocation   */
+   68.1       /* with both positional and keyword    */
+   69.1       /* arguments                           */
+   70.1       char = char_p(abc);
+   71.1       /* Note the two ';' at then end of args for a statement proc */
+   72.1       fixed = add(9,8,7);;   /* 9+8+7=24 */
+   73.1       fixed = add(6,5);;   /* 6+5+0=11 */
+   74.1       fixed = add one(1) two(2) three(3);;   /* 1+2+3=6  */
+   75.1
+   76.1       /* Activate/Deactivate                                    */
+   77.1       /* date and time builtins not defined in IBM preprocessor */
+   78.1       %deactivate char_p;
+   79.1       char = char_p(x);       /* does not invoke proc  */
+   80.1       %activate char_p;
+   81.1       char = char_p(y);     /* comment 'y' */
+   82.1       %alpha = char_p(' This is a comment ');
+   83.1       alpha
+   84.1
+   85.1       /* Test builtins */
+   86.1       put skip list(quote(compiletime)); /* compiletime */
+   87.1       fixed  = counter;                      /* counter 1 */
+   88.1       %alpha = counter                      /* counter 2 */ ;
+   89.1       %alef  = length(alpha);
+   90.1       put skip list('length of counter ' || quote(alpha) ' is' || alef); /* length */
+   91.1       %alpha = 'abcdef';
+   92.1       %beit  = index(alpha,'c');
+   93.1       put skip list('index of c in ' || quote(alpha) ' is' || beit);    /* index */
+   94.1       %beta = substr(alpha,3,2);
+   95.1       put skip list( quote(beta) );               /* substr('abcdef',3,2) */
+   96.1
+   97.1       /* date and time builtins are not supported by IBM PL/I preprocessors */
+   98.1       /* The following two statements will generate errors                  */
+   99.1       char = quote(time); /* time */
+  100.1       char = quote(date); /* date */
+  101.1
+  102.1
+  103.1       end preproc_test;
+
+MACRO Messages
+
+Message     Line.File  Message Description
+
+IBM3589I E    50.1     The identifier DATE is not the name of a built-in
+                       function. The BUILTIN attribute will be ignored.
+IBM3589I E    50.1     The identifier TIME is not the name of a built-in
+                       function. The BUILTIN attribute will be ignored.
+IBM3250I W    73.1     Argument "three" missing

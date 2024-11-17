@@ -1,0 +1,40 @@
+ /*****check digit routine*********************************************/
+ /*                                                                   */
+ /*  this check digit routine is a functional subroutine which will   */
+ /* return the single character modulus eleven check digit of any     */
+ /* number up to fifteen digits long.                                 */
+ /*                                                                   */
+ /* e.g :                                                             */
+ /* x = check(nnnnnnn) ;                                              */
+ /*     or:---                                                        */
+ /* if check(nnnnnnn) ª= 'x' then .....                               */
+ /*  ....                                                             */
+ /* %include (check) ;                                                */
+ /*  where x is character(1) and nnnnnnn is any number up to 15 digits*/
+ /*  which must be alphanumeric only.                                 */
+ /*********************************************************************/
+ check: proc (@@parm) returns (char(1)) reorder ;
+ dcl @@parm char(*) ;
+ dcl (substr,length,mod,index,verify) builtin ;
+ dcl @@alpha(0:25) char(2) static init('10','11','12','13','14','15',
+  '16','17','18','19',
+  '20','21','22','23','24','25','26','27','28','29','31','32','33',
+                                                     '34','35','36') ;
+ dcl @@string char(32) var automatic init('') ;
+ dcl @@char char(30) init('') automatic ;
+ dcl @@pic(30) pic'9' def @@char pos(1) ;
+ dcl @@work fixed(15) init(0) automatic ;
+ dcl (@@i,@@j) fixed bin(15) init(0) automatic ;
+ do @@i = 1 to length(@@parm) ;
+    if verify(substr(@@parm,@@i,1),'0123456789')
+    then @@string= @@string|| @@alpha(index('ABCDEFGHIJKLMNOPQRSUVWXYZ'',
+                                          substr(@@parm,@@i,1)));
+    else @@string= @@string|| substr(@@parm,@@i,1) ;
+    end ;
+ @@char = @@string ;
+ @@j    = length(@@string) + 2 ;
+ do @@i = 1 to length(@@string) ;
+     @@work = @@work + (@@pic(@@i) * (@@j - @@i)) ;
+     end ;
+ return ( substr('123456789T0',(11 - mod(@@work,11)) ,1) ) ;
+ end ; /* check                                                       */

@@ -1,0 +1,41 @@
+ /*------------------------------------------------------------------*/
+ /* ELF Hash Function                                                */
+ /* Here is the C version of the hash function from the ELF standard.*/
+ /* Note that PL/I is more strongly typed among BIT, CHARACTER,      */
+ /* and FIXED BINARY data than C.                                    */
+ /* Some versions of this algorithm declare name as unsigned char    */
+ /* and some do not.  This canonical version uses unsigned.          */
+ /*                                                                  */
+ /* unsigned long elf_hash(const unsigned char *name)                */
+ /* {                                                                */
+ /*    unsigned long h=0, g;                                         */
+ /*                                                                  */
+ /*    while (*name)                                                 */
+ /*    {                                                             */
+ /*       h = (h << 4) + *name++;                                    */
+ /*       if (g = h & 0xF0000000)                                    */
+ /*          h ^= (g >> 24);                                         */
+ /*       h &= ~g;                                                   */
+ /*    }                                                             */
+ /*    return h;                                                     */
+ /* }                                                                */
+ /*------------------------------------------------------------------*/
+ elf_hash: proc( name ) returns( fixed bin(31) );
+   dcl   name                char(*) varying;
+   dcl   h                   fixed bin(31)       init(0);
+   dcl   g                   bit(32);
+   dcl   i                   fixed bin(31);
+   dcl   b32                 bit(32) based;
+   do i=1 to length(name);
+ (nofixedoverflow):                    /* Allow mult. to O'flow.     */
+     h  = h*16 + rank( substr(name,i,1) );
+     g = addr(h)->b32 & '000000F0'bx;  /* High-order nybble of hash  */
+     if g�='00000000'bx then do;
+       addr(h)->b32 = bool( addr(h)->b32,
+                            substr(g,25,8),
+                            '0110'b ); /* Exclusive-OR               */
+       end;
+     addr(h)->b32 = addr(h)->b32 & 琯;
+     end; /* do i */
+   return(h);
+   end elf_hash;

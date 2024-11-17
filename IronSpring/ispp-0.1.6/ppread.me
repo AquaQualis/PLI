@@ -1,0 +1,53 @@
+August 25, 2024
+-----------
+
+This is the beta version 0.1.6 of the Iron Spring PL/I Preprocessor (ISPP).
+ISPP is intended to be a backward-compatible version of the IBM 2.3
+preprocessor, with some features borrowed from IBM Enterprise PL/I and
+other sources.
+
+Contents
+--------
+
+ 1. ppread.me - this file
+ 2. ISPP      - the Linux executable for the preprocessor
+ 3. Iron-SpringPLIPreprocessor.pdf - Preprocessor reference
+ 4. samp      - directory containing a sample program and output
+    . preproc_test.pli   - sample program to exercise all preprocessor 
+          features
+    . preproc.sh - command to preprocess the sample
+    . preproc_test.ins   - the "insource" listing of the sample, showing all
+          statements
+    . preproc_test.dek   - the preprocessed output of the sample
+    . preproc_win.LST    - the "insource" listing of the sample, processed
+          by IBM PL/I for Windows V2.R1.07
+    . preproc_win.DEK    - the preprocessed output of the sample, processed
+          by IBM PL/I for Windows V2.R1.07
+
+Modifications
+-------------
+Changes for 0.1.6
+  . IF-statements might incorrectly execute both the THEN and the ELSE paths.
+  . % in multi-line comments or character strings in input text treated as 
+    preprocessor statement.
+  . Added display messages for invalid command switches.
+  . Corrected problems converting and using bit constants.
+  . Name of output insource file truncated.
+
+Changes for version 0.1.5
+  . Improvements to the input scanner and text storage. 
+  . OS/2-specific fixes.
+Other enhancements include:
+  . Include files may now optionally be preprocessed when encountered.
+  . Input and output margins may be specified
+  . The SYSPARM builtin is now implemented
+  . Numerous bug fixes and tweaks
+
+ISPP can be downloaded from:
+  http://www.Iron-Spring.com/download/
+
+Bugs should be reported to:
+  mailto:bugs@iron-spring.com?Subject=ISPP
+(success reports welcomed also)
+
+Thanks to all who have submitted code for testing.

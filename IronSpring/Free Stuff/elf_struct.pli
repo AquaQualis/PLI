@@ -1,0 +1,206 @@
+ /********************************************************************/
+ /*                                                                  */
+ /*    PL/I definitions for ELF data structures                      */
+ /*                                                                  */
+ /*    Author: Peter Flass - Iron Spring Software                    */
+ /*                                                                  */
+ /*    Released into the public domain - March, 2012                 */
+ /*                                                                  */
+ /*    These are x86 ELF data structures based on                    */
+ /*    _Executable and Linkable Format (ELF)_                        */
+ /*    _Tool Interface Standards (TIS)_                              */
+ /*    _Portable Formats Specification, Version 1.1_                 */
+ /*                                                                  */
+ /*    These definitions may not include all the data structures     */
+ /*    listed in the document. They are coded for the Iron Spring    */
+ /*    PL/I compiler <http://www.iron-spring.com> and may or may     */
+ /*    not work with other compilers.                                */
+ /*                                                                  */
+ /********************************************************************/
+ 
+ /* Values for sh_type      */
+ %replace SHT_NULL      by  0;
+ %replace SHT_PROGBITS  by  1;
+ %replace SHT_SYMTAB    by  2;
+ %replace SHT_STRTAB    by  3;
+ %replace SHT_RELA      by  4;
+ %replace SHT_HASH      by  5;
+ %replace SHT_DYNAMIC   by  6;
+ %replace SHT_NOTE      by  7;
+ %replace SHT_NOBITS    by  8;
+ %replace SHT_REL       by  9;
+ %replace SHT_SHLIB     by 10;
+ %replace SHT_DYNSYM    by 11;
+ 
+ /* Values for sh_flags     */
+ %replace SHF_WRITE     by  1;
+ %replace SHF_ALLOC     by  2;
+ %replace SHF_EXECINSTR by  4;
+ 
+ /* Values for ELF32_ST_BIND*/
+ /*(upper 4-bits of st_info)*/
+ %replace STB_LOCAL     by  0;
+ %replace STB_GLOBAL    by  1;
+ %replace STB_WEAK      by  2;
+ 
+ /* Values for ELF32_ST_TYPE*/
+ /*(lower 4-bits of st_info)*/
+ %replace STT_NOTYPE    by  0;
+ %replace STT_OBJECT    by  1;
+ %replace STT_FUNC      by  2;
+ %replace STT_SECTION   by  3;
+ %replace STT_FILE      by  4;
+ 
+ /* Val. for ELF32_ST_SHNDX */
+ %replace SHN_UNDEF     by   0;
+ %replace SHN_ABS       by -15; /* 'FFF1'x */
+ %replace SHN_COMMON    by -14; /* 'FFF2'x */
+ 
+ /* Val. for Relocation types  */
+ %replace R_386_NONE      by   0;
+ %replace R_386_32        by   1;
+ %replace R_386_PC32      by   2;
+ %replace R_386_GOT32     by   3;
+ %replace R_386_PLT32     by   4;
+ %replace R_386_COPY      by   5;
+ %replace R_386_GLOB_DAT  by   6;
+ %replace R_386_JMP_SLOT  by   7;
+ %replace R_386_RELATIVE  by   8;
+ %replace R_386_GOTOFF    by   9;
+ %replace R_386_GOTPC     by  10;
+ 
+ /*-------------------------*/
+ /* ELF Header              */
+ /*-------------------------*/
+ dcl   1 elf_header,
+         5 e_ident,                    /* ELF Identifier             */
+           10 ei_magic       char(4),
+           10 ei_class       char(1),
+           10 ei_data        char(1),
+           10 ei_version     char(1),
+           10 ei_pad         char(9),
+         5 e_type            char(2),  /* Object file type           */
+         5 e_machine         char(2),  /* Architecture               */
+         5 e_version         char(4),  /* ELF Version                */
+         5 e_entry           char(4),  /* Program entry address or 0 */
+         5 e_phoff           char(4),  /* Prog Hdr Tbl offset or 0   */
+         5 e_shoff           char(4),  /* Sect Hdr Tbl offset or 0   */
+         5 e_flags           char(4),  /* Flags (none defined)       */
+         5 e_ehsize          char(2),  /* ELF header size            */
+         5 e_phentsize       char(2),  /* Prog header tbl ent size   */
+         5 e_phnum           char(2),  /* # program tbl entries      */
+         5 e_shentsize       char(2),  /* Section header tbl ent size*/
+         5 e_shnum           char(2),  /* Number of section tbl ent  */
+         5 e_shstrndx        char(2),  /* Index of sect name str     */
+         5 elf_header_end    char(0);
+
+ /*-----------------------------------*/
+ /* Predefined Section Information    */
+ /*-----------------------------------*/
+ dcl     SecName          (8)char(16)  varying   static
+              init( '.comment', '.shstrtab', '.strtab', '.symtab',
+                    '.text',    '.data',     '.bss',
+                    '*' );
+ dcl     SecType          (8)fixed bin(31)       static
+              init( SHT_PROGBITS, SHT_STRTAB,   SHT_STRTAB, SHT_SYMTAB,
+                    SHT_PROGBITS, SHT_PROGBITS, SHT_NOBITS,
+                    -1 );
+ dcl     SecAttr          (8)fixed bin(31)       static
+              init( 0,            0,            0,          0,         
+                    SHF_ALLOC+SHF_EXECINSTR,     /* .text            */ 
+                    SHF_ALLOC+SHF_WRITE,         /* .data            */ 
+                    SHF_ALLOC+SHF_WRITE,         /* .bss             */
+                    -1 );
+ dcl     SecAlign         (8)fixed bin(31)       static
+              init( 1,            1,            1,          4,
+                    8,            8,            8,
+                    -1 );
+
+ /*-------------------------*/
+ /* ELF Section Header      */
+ /*-------------------------*/
+ dcl   1 elf_shdr      (0:1)based,
+         5 sh_name          char(4),             /* Name index       */
+         5 sh_type          char(4),             /* Section type     */
+         5 sh_flags         char(4),             /* Flag bits        */
+         5 sh_addr          char(4),             /* Memory addr      */
+         5 sh_offset        char(4),             /* File offset      */
+         5 sh_size          char(4),             /* File size        */
+         5 sh_link          char(4),             /* Index link       */
+         5 sh_info          char(4),             /* Extra info       */
+         5 sh_addralign     char(4),             /* Address alignment*/
+         5 sh_entsize       char(4),             /* Size of entry    */
+         5 sh_end           char(0);
+
+ /*-------------------------*/
+ /* ELF Relocation Entry    */
+ /*-------------------------*/
+ dcl   1 elf32_rel          based,
+         5 r_offset         char(4),             /* Symbol name index*/
+         5 r_info           char(4),             /* Symbol value     */
+         5 r_end            char(0);
+
+ /*-------------------------*/
+ /* ELF Symbol Table        */
+ /*-------------------------*/
+ dcl   1 elf32_sym          based,
+         5 st_name          char(4),             /* Symbol name index*/
+         5 st_value         char(4),             /* Symbol value     */
+         5 st_size          char(4),             /* Symbol size      */
+         5 st_info          char(1),             /* Symbol type/bind */
+         5 st_other         char(1),             /* (reserved)       */
+         5 st_shndx         char(2),             /* Symbol section   */
+         5 st_end           char(0);
+
+
+ /*-----------------------------------*/
+ /* The following code shows how to   */
+ /* initialize the ELF header.        */
+ /*-----------------------------------*/
+ init_header: proc;
+   /* ELF Identifier -----------------*/
+   ei_magic    = '7F'x || 'ELF';
+   ei_class    = '01'x;                /* ELFCLASS32                 */
+   ei_data     = '01'x;                /* ELFDATA2LSB                */
+   ei_version  = '01'x;                /* Version 1                  */
+   /* End of identifier --------------*/
+   e_type      = TFB2C(1,2);           /* ET_REL: Relocatable file   */
+   e_machine   = TFB2C(3,2);           /* EM_386: Intel 80x86        */
+   e_version   = TFB2C(1,4);           /* EV_CURRENT (save as ei_vers*/
+   e_ehsize    = TFB2C(stg(elf_header),2);       /* Header size      */
+   e_shentsize = TFB2C(stg(null()->elf_shdr(1)),2); /* Sect t20090522*/
+   e_shstrndx  = TFB2C(2,2);           /* See 'init_sect_tbl'        */
+   /* Entry information 'e_entry' and 'e_phoff' is unused, since     */
+   /* the entry point for all PL/I programs is '_pli_Start'.         */
+   /* The following information is filled in during processing:      */
+   /* 'e_shoff', 'e_shnum'.                                          */
+   /* e_flags is unused.                                             */
+
+   end init_header;
+
+ /*------------------------------------------------------------------*/
+ /* TFB2C: converts a binary number to a hex character string        */
+ /*        in target format.                                         */
+ /*------------------------------------------------------------------*/
+ TFB2C: proc(bin,prec) returns( char(4) varying );
+   dcl   bin                 fixed bin(31);
+   dcl   prec                fixed bin(7); 
+   dcl   bits_31             bit(31);
+   dcl   bits_32             bit(32);
+   dcl   char_4              char(4) based( addr(bits_32) );
+   bits_31 = bin;
+   if bin<0 then do;         /* Convert to twos complement   20051129*/
+     bits_31 = bin+1;        /* Add one for complement       20051129*/
+     bits_32 = '1'b || ªbits_31;/* Then invert bits          20051129*/
+     end;                    /* Twos complement            /*20051129*/
+   else bits_32 = '0'b || bits_31;                         /*20051129*/
+   if prec=1 then return( substr(char_4,4,1) );
+   if prec=2 then return( substr(char_4,4,1) ||
+                          substr(char_4,3,1) );
+   if prec=4 then return( substr(char_4,4,1) ||
+                          substr(char_4,3,1) ||
+                          substr(char_4,2,1) ||
+                          substr(char_4,1,1) );
+   return( '' );
+ end TFB2C;
+

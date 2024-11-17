@@ -1,0 +1,63 @@
+/* preproc_test.pli -- PL/I Preprocessor test program                */
+/*********************************************************************/
+/*            Iron Spring PL/I Compiler                              */
+/*            Preprocessor test program                              */
+/*                                                                   */
+/* Function: preproc_test does no useful work.                       */
+/*           Its purpose is to test all preprocessor statements.     */
+/*                                                                   */
+/*           No attempt is made to test possible error conditions.   */
+/*                                                                   */
+/*           Strictly speaking it does not have to be in the form    */
+/*           of a valid PL/I program. Any sequence of data not       */
+/*           containing '%' characters outside of PL/I comments      */
+/*           and character strings '...' or "..."                    */
+/*           is allowed, except that comments and character strings  */
+/*           must be properly terminated.                            */
+/*           (to code a '%', use two percents: '%%'.                 */
+/*                                                                   */
+/*********************************************************************/
+preproc_test: proc;
+  /* Declare a couple of normal variables to code valid statements   */
+  dcl     fixed               fixed bin(31);
+  dcl     char                character(1024)     varying;
+
+
+
+  /* Preprocessor Type-3 DO-statement    */
+  /* with ITERATE and LEAVE statements   */
+  /* prints values 1,2,4,5,6             */
+  put skip list( 'Do repetition        1' );
+  put skip list( 'Do repetition        2' );
+  put skip list( 'Do repetition        4' );
+  put skip list( 'Do repetition        5' );
+  put skip list( 'Do repetition        6' );
+  /* Preprocessor procedure invocation   */
+  /* with both positional and keyword    */
+  /* arguments                           */
+  char = /*abc*/;
+  /* Note the two ';' at then end of args for a statement proc */
+  fixed =       24;   /* 9+8+7=24 */
+  fixed =       11;   /* 6+5+0=11 */
+  fixed =        6;   /* 1+2+3=6  */
+
+  /* Activate/Deactivate                                    */
+  /* date and time builtins not defined in IBM preprocessor */
+  char = char_p(x);       /* does not invoke proc  */
+  char = /*y*/;     /* comment 'y' */
+  /* This is a comment */
+
+  /* Test builtins */
+  put skip list('15 NOV 24 20.04.03'); /* compiletime */
+  fixed  = 00001;                      /* counter 1 */
+  put skip list('length of counter ' || '00002' ' is' ||        5); /* length */
+  put skip list('index of c in ' || 'abcdef' ' is' ||        3);    /* index */
+  put skip list( 'cd' );               /* substr('abcdef',3,2) */
+
+  /* date and time builtins are not supported by IBM PL/I preprocessors */
+  /* The following two statements will generate errors                  */
+  char = '20040392'; /* time */
+  char = '241115'; /* date */
+
+
+  end preproc_test;
