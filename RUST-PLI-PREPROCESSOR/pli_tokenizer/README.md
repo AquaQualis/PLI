@@ -1,89 +1,113 @@
-# PL/I Preprocessor in Rust
+PL/I Preprocessor in Rust
+A robust and extensible PL/I preprocessor implemented in Rust, featuring tokenization, syntax validation, and preprocessor directive handling. Designed for performance, scalability, and ease of use, this project supports core PL/I preprocessing logic while offering extensive test coverage.
 
-This project implements a PL/I preprocessor in Rust. It includes tokenization, file validation, and basic syntax handling for PL/I preprocessor directives such as `%IF`, `%THEN`, `%ELSE`, `%ENDIF`, and `%COMMENT`.
-
-## Features Implemented
-1. **Tokenization**:
-   - Handles PL/I syntax such as strings, preprocessor directives, and operators.
-   - Supports quoted strings, comments, and special characters.
-
-2. **File Validation**:
-   - Accepts only files with `.pp` and `.pli` extensions.
-   - Logs unsupported file extensions with a warning.
-
-3. **Pass/Fail Logic**:
-   - Differentiates valid preprocessor lines, non-preprocessor lines, and blank lines.
-   - Skips blank lines and logs tokenizer errors.
-
-4. **Support for Basic Directives**:
-   - `%IF`, `%THEN`, `%ELSE`, `%ENDIF`, `%COMMENT`.
-
-5. **Testing Framework**:
-   - Includes a `tests/input/` directory with sample test files.
-
-## Project Structure
-pli_preprocessor/ ├── src/ │ └── main.rs # Rust source code ├── tests/ │ ├── input/ # Input test files │ │ ├── valid_file.pp │ │ ├── invalid_file.txt │ │ ├── edge_case.pli │ │ └── if_example.pp │ └── output/ # Optional directory for generated log files ├── pli_tokenizer.log # Example log file (optional) ├── Cargo.toml # Rust project configuration ├── README.md # Project documentation └── .gitignore # Git ignore rules
-
-
-## How to Run
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd pli_preprocessor
-
-    Build and run the program:
-
+📚 Features
+1. Tokenization
+Accurately handles PL/I syntax including:
+Strings ('example')
+Preprocessor directives (%IF, %THEN, %ELSE, %ENDIF)
+Special characters (!@#$%^&*()-+=)
+Combines special characters with identifiers (@INVALID_CHAR).
+2. File Validation
+Processes only files with .pp or .pli extensions.
+Logs unsupported file extensions with detailed warnings.
+3. Directive Handling
+Supports the following preprocessor directives:
+%IF, %THEN, %ELSE, %ENDIF, %COMMENT
+Differentiates between valid, invalid, and non-preprocessor lines.
+Skips blank lines and logs errors during tokenization.
+4. Test Suite
+Comprehensive testing framework with 13 passing test cases.
+Tests include:
+Valid files.
+Invalid files.
+Edge cases (e.g., nested and deeply nested directives).
+Mixed content and very large files.
+5. Logging
+Outputs tokenization and validation results to a log file (pli_tokenizer.log).
+📂 Project Structure
+plaintext
+Copy code
+pli_preprocessor/
+├── src/
+│   └── main.rs               # Main Rust source code.
+├── tests/
+│   ├── input/                # Test input files.
+│   │   ├── valid_file.pp     # Valid PL/I directives.
+│   │   ├── invalid_file.txt  # Invalid file extension test case.
+│   │   ├── edge_case.pli     # Complex directive cases.
+│   │   └── if_example.pp     # Nested logic test.
+│   └── output/               # Optional output directory for logs.
+├── pli_tokenizer.log         # Example log file.
+├── Cargo.toml                # Rust project configuration.
+├── README.md                 # Project documentation.
+└── .gitignore                # Git ignore rules.
+⚙️ How to Use
+1. Clone the Repository
+bash
+Copy code
+git clone <your-repo-url>
+cd pli_preprocessor
+2. Build the Project
+bash
+Copy code
 cargo build
+3. Run the Preprocessor
+bash
+Copy code
 cargo run tests/input/valid_file.pp
-
-Check the log file:
-
-    cat pli_tokenizer.log
-
-Test Files
-
-    valid_file.pp: Contains valid PL/I preprocessor directives.
-    invalid_file.txt: Invalid file extension for rejection testing.
-    edge_case.pli: Tests nested and complex directives.
-    if_example.pp: Demonstrates %IF, %THEN, %ELSE, and nested logic.
-
-Next Steps
-
-    Expand tokenizer to support additional directives like %DO and %INCLUDE.
-    Add robust error handling for invalid syntax.
-    Implement preprocessor expressions for evaluating %IF conditions.
-
+4. View Logs
+bash
+Copy code
+cat pli_tokenizer.log
+5. Run Tests
+bash
+Copy code
+cargo test -- --nocapture
+🧪 Test Files
+valid_file.pp: Contains valid PL/I preprocessor directives.
+invalid_file.txt: Tests rejection of unsupported file extensions.
+edge_case.pli: Tests nested and complex directives.
+if_example.pp: Demonstrates %IF, %THEN, %ELSE, and nested logic.
+🚀 Next Steps
+Planned Enhancements
+Expand Directive Support:
+Add %DO and %INCLUDE.
+Error Handling:
+Implement robust error detection for invalid syntax.
+Expressions:
+Add support for preprocessor expressions in %IF conditions.
+Code Refactoring:
+Replace if-else logic in tokenize_pli with a match statement for readability and maintainability.
 Contributions
-
-Feel free to open an issue or submit a pull request!
-
-
----
-
-### **Capturing Work with Git**
-1. **Initialize Git (if not done already):**
-   ```bash
-   git init
-
-    Add Files to the Repo:
-
+Contributions are welcome! Open an issue or submit a pull request with your suggestions or fixes.
+📋 Capturing Work with Git
+1. Initialize Git
+bash
+Copy code
+git init
+2. Add Files
+bash
+Copy code
 git add src/main.rs tests/input/ README.md Cargo.toml .gitignore
-
-Commit the Changes:
-
+3. Commit Changes
+bash
+Copy code
 git commit -m "Initial commit: Tokenizer and basic preprocessor functionality"
-
-Push to GitHub:
-
-    git branch -M main
-    git remote add origin <your-repo-url>
-    git push -u origin main
-
-Capturing Progress
-
-Include notes or commit messages that document the steps we've completed:
-
-    Tokenization: Handles strings, directives, and special characters.
-    Validation: Processes only .pp and .pli files.
-    Pass/Fail Logic: Differentiates preprocessor directives from normal lines.
-    Test Inputs: Added input files for testing.
+4. Push to GitHub
+bash
+Copy code
+git branch -M main
+git remote add origin <your-repo-url>
+git push -u origin main
+📝 Progress Tracking
+Features Completed
+Tokenization: Handles strings, directives, and special characters.
+Validation: Processes .pp and .pli files only.
+Pass/Fail Logic: Differentiates directives from plain text lines.
+Test Inputs: Comprehensive test coverage with 13 test cases.
+Pending Work
+Implement advanced directive support.
+Refactor for improved readability using match.
+💡 About This Project
+At FirstLink Consulting Services (FLCS), we specialize in delivering innovative software solutions. This project showcases our commitment to building robust, maintainable, and high-performance tools.
