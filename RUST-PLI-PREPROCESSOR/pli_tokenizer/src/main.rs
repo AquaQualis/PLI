@@ -1,32 +1,33 @@
+#![allow(unused_imports)]
 ////////////////////////////////////////////////////////////////////////////////
-// PL/I Preprocessor Tokenizer
+// PL/I Preprocessor Main Program
 // -----------------------------------------------------------------------------
 // Author: Jean-Pierre Sainfeld
-// Assitant: ChatGpt
+// Assistant: ChatGPT
 // Company: FirstLink Consulting Services (FLCS)
 // Date: 11/17/2024
 // -----------------------------------------------------------------------------
 // Description:
-// This program implements a tokenizer for a simplified PL/I preprocessor.
-// It processes files containing PL/I preprocessor directives and normal
-// PL/I statements, tokenizes each line, and logs the results, including
-// pass/fail status, to a log file.
+// The main entry point for the PL/I Preprocessor project. This program reads
+// PL/I source files containing preprocessor directives and normal PL/I
+// statements, processes them using various modules, and writes the results to
+// an output file and log file.
 //
 // Features:
-// - Tokenizes strings, directives, operators, and special characters.
-// - Validates file extensions to accept only `.pp` and `.pli` files.
-// - Logs tokenized lines and summary results.
-// - Supports basic PL/I preprocessor directives like `%IF`, `%THEN`, `%ELSE`.
+// - Tokenizes lines from an input file.
+// - Validates preprocessor directives.
+// - Supports macro expansion, include resolution, conditional execution, and more.
+// - Generates transformed output and detailed logs.
 //
 // Purpose:
-// This project is a learning exercise to explore the Rust programming
-// language while implementing a functional PL/I preprocessor tokenizer.
+// The main program orchestrates the modular PL/I Preprocessor project.
+// It serves as a learning exercise to explore Rust while implementing a
+// practical tool.
 //
 // Usage:
-// Run the program with a file as input:
-// $ cargo run <input_file>
+// $ cargo run <input_file> <output_file> <log_file> [--verbose] [--dry-run]
 //
-// The results will be written to a log file in `tests/output/pli_tokenizer.log`.
+// The results will be written to the specified output and log files.
 //
 // Company Mission:
 // At FirstLink Consulting Services (FLCS), we specialize in delivering
@@ -35,199 +36,158 @@
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-use std::env; // Import the `env` module to handle command-line arguments.
-use std::fs::File; // Import the `File` module to perform file I/O operations.
-use std::io::{self, BufRead, Write}; // Import `io` for reading/writing and buffer handling.
-use std::path::Path; // Import `Path` to handle file path manipulations.
+use pli_tokenizer::modules::{
+    tokenizer::{tokenize_pli, is_valid_preprocessor_directive, has_tokenizer_error},
+    validator,
+    evaluator,
+    macro_expander,
+    include_handler,
+    conditional,
+    logger,
+    output,
+};
 
-/// Tokenizes a single line of PL/I code.
-/// This function splits the input string into meaningful tokens such as strings, directives, and operators.
-/// 
-/// # Arguments
-/// - `text`: A reference to a string slice containing the line to tokenize.
-///
-/// # Returns
-/// A `Vec<String>` containing the tokens extracted from the input line.
-fn tokenize_pli(text: &str) -> Vec<String> {
-    let mut tokens = Vec::new(); // Vector to hold tokens.
-    let mut current_token = String::new(); // Temporary buffer for building tokens.
-    let mut in_string = false; // Boolean flag to track if we're inside a string literal.
+use std::env; // Handles command-line arguments.
+use std::fs::File; // Enables file operations.
+use std::io::{self, BufRead, Write}; // Provides buffered I/O utilities.
+use std::path::Path; // Allows manipulation of file paths.
+use chrono::Local; // For timestamps in logging.
 
-    let mut chars = text.chars().peekable(); // Create an iterator over characters with lookahead.
-
-    while let Some(c) = chars.next() {
-        if in_string {
-            current_token.push(c); // Append character to the current token.
-            if c == '\'' {
-                // End of a string literal.
-                in_string = false;
-                tokens.push(current_token.clone()); // Save the token.
-                current_token.clear(); // Reset for the next token.
-            }
-        } else if c == '\'' {
-            // Start of a string literal.
-            in_string = true;
-            current_token.push(c);
-        } else if c == '%' {
-            // Start of a preprocessor directive.
-            current_token.push(c);
-            while let Some(&next_c) = chars.peek() {
-                // Lookahead to include alphanumeric characters.
-                if next_c.is_alphanumeric() {
-                    current_token.push(next_c);
-                    chars.next(); // Consume the character.
-                } else {
-                    break;
-                }
-            }
-            tokens.push(current_token.clone()); // Save the directive token.
-            current_token.clear();
-        } else if c.is_whitespace() {
-            // End of a token when whitespace is encountered.
-            if !current_token.is_empty() {
-                tokens.push(current_token.clone());
-                current_token.clear();
-            }
-        } else if "!@#$%^&*()-+=[]{}|\\:;,.<>?/".contains(c) {
-            // Handle special characters as individual tokens.
-            if !current_token.is_empty() {
-                tokens.push(current_token.clone());
-                current_token.clear();
-            }
-            tokens.push(c.to_string()); // Save the special character as a token.
-        } else {
-            // Build regular tokens.
-            current_token.push(c);
-        }
-    }
-
-    if !current_token.is_empty() {
-        tokens.push(current_token); // Save the last token if any.
-    }
-
-    tokens
-}
-
-/// Validates the file extension to ensure only `.pp` and `.pli` files are accepted.
+/// Processes the input file line by line and applies the preprocessor workflow.
+/// This includes tokenization, validation, macro expansion, conditional evaluation, and more.
 ///
 /// # Arguments
-/// - `input_file`: The name of the input file as a string slice.
-///
-/// # Returns
-/// `true` if the file extension is valid, otherwise `false`.
-fn validate_file_extension(input_file: &str) -> bool {
-    let allowed_extensions = ["pp", "pli"]; // List of valid extensions.
-    if let Some(extension) = Path::new(input_file).extension() {
-        // Check if the file's extension matches any of the allowed ones.
-        return allowed_extensions.contains(&extension.to_str().unwrap_or(""));
-    }
-    false
-}
-
-/// Determines whether a line starts with a valid preprocessor directive.
-///
-/// # Arguments
-/// - `tokens`: A reference to a vector of tokens.
-///
-/// # Returns
-/// `true` if the first token matches a valid directive, otherwise `false`.
-fn is_valid_preprocessor_directive(tokens: &[String]) -> bool {
-    let valid_directives = ["%IF", "%DO", "%MACRO", "%END", "%ENDIF", "%INCLUDE", "%COMMENT"];
-    if let Some(first_token) = tokens.get(0) {
-        return valid_directives.contains(&first_token.as_str());
-    }
-    false
-}
-
-/// Checks for errors in tokenized lines (e.g., unclosed strings).
-///
-/// # Arguments
-/// - `tokens`: A reference to a vector of tokens.
-///
-/// # Returns
-/// `true` if a tokenizer error is found, otherwise `false`.
-fn has_tokenizer_error(tokens: &[String]) -> bool {
-    tokens.iter().any(|token| token.starts_with("'") && !token.ends_with("'"))
-}
-
-/// Processes the input file line by line, tokenizing and logging results.
-///
-/// # Arguments
-/// - `input_file`: Path to the input file.
-/// - `log_file`: Path to the log file where results are written.
+/// - `input_file`: The path to the input PL/I file.
+/// - `output_file`: The path to the file where processed output will be written.
+/// - `log_file`: The path to the log file for detailed logs.
+/// - `verbose`: A boolean flag to control detailed console output.
+/// - `dry_run`: A boolean flag to simulate processing without writing output.
 ///
 /// # Returns
 /// A `Result` indicating success or an I/O error.
-fn process_file(input_file: &str, log_file: &str) -> io::Result<()> {
-    let path = Path::new(input_file); // Create a `Path` object for the input file.
-    let log_path = Path::new(log_file); // Create a `Path` object for the log file.
+fn process_file(
+    input_file: &str,
+    output_file: &str,
+    log_file: &str,
+    verbose: bool,
+    dry_run: bool,
+) -> io::Result<()> {
+    // Create `Path` objects for input, output, and log files.
+    let path = Path::new(input_file);
+    let log_path = Path::new(log_file);
+    let output_path = Path::new(output_file);
 
-    let file = File::open(&path)?; // Open the input file (errors propagate with `?`).
-    let reader = io::BufReader::new(file); // Use a buffered reader for efficiency.
-    let mut log = File::create(&log_path)?; // Create or overwrite the log file.
+    // Open the input file and create buffered readers and writers.
+    let file = File::open(&path)?;
+    let reader = io::BufReader::new(file);
+    let mut log = File::create(&log_path)?;
+    let mut output = if dry_run {
+        None // Do not create the output file if dry-run is enabled.
+    } else {
+        Some(File::create(&output_path)?)
+    };
 
-    let mut total_lines = 0; // Counter for total lines processed.
-    let mut pass_count = 0; // Counter for successful lines.
-    let mut fail_count = 0; // Counter for failed lines.
+    // Log the processing start with a timestamp.
+    let start_time = Local::now();
+    writeln!(log, "Processing started: {}", start_time)?;
 
-    writeln!(log, "Processing file: {}", input_file)?; // Log the file being processed.
-
+    // Iterate through each line in the input file.
     for (line_number, line) in reader.lines().enumerate() {
-        let line = line?;
-        if line.trim().is_empty() {
-            continue; // Skip blank lines.
-        }
+        match line {
+            Ok(content) => {
+                if content.trim().is_empty() {
+                    continue; // Skip blank lines.
+                }
 
-        total_lines += 1;
+                if verbose {
+                    println!("Processing line {}: {}", line_number + 1, content);
+                }
 
-        let tokens = tokenize_pli(&line); // Tokenize the line.
-        writeln!(log, "Line {}: {:?}", line_number + 1, tokens)?; // Log the tokens.
+                // Phase 1: Tokenization
+                let tokens = tokenize_pli(&content);
+                writeln!(log, "Line {} Tokens: {:?}", line_number + 1, tokens)?;
 
-        if has_tokenizer_error(&tokens) {
-            writeln!(log, "Line {}: FAIL (Tokenizer Error)", line_number + 1)?;
-            fail_count += 1;
-        } else if is_valid_preprocessor_directive(&tokens) {
-            writeln!(log, "Line {}: PASS", line_number + 1)?;
-            pass_count += 1;
-        } else if !tokens.is_empty() {
-            writeln!(log, "Line {}: Non-preprocessor line", line_number + 1)?;
-        } else {
-            writeln!(log, "Line {}: FAIL", line_number + 1)?;
-            fail_count += 1;
+                // Phase 2: Validation
+                // TODO: Validate the syntax of the tokenized line.
+                // if validator::validate_syntax(&tokens) {
+                //     writeln!(log, "Line {}: Syntax Valid", line_number + 1)?;
+                // } else {
+                //     writeln!(log, "Line {}: Syntax Error", line_number + 1)?;
+                //     continue; // Skip further processing for invalid lines.
+                // }
+
+                // Phase 3: Macro Expansion
+                // TODO: Expand macros in the line.
+                // macro_expander::expand_macro("...");
+
+                // Phase 4: Expression Evaluation
+                // TODO: Evaluate conditional expressions in the line.
+                // evaluator::evaluate_expression("...");
+
+                // Phase 5: Include Resolution
+                // TODO: Resolve includes to replace lines dynamically.
+                // include_handler::handle_include("...");
+
+                // Phase 6: Conditional Execution
+                // TODO: Process conditional statements.
+                // conditional::process_condition("...");
+
+                // Phase 7: Output Generation
+                if let Some(ref mut output_file) = output {
+                    writeln!(output_file, "{}", content)?; // Write processed line to output file.
+                }
+            }
+            Err(e) => {
+                writeln!(log, "Error reading line {}: {}", line_number + 1, e)?;
+            }
         }
     }
 
-    // Log summary statistics.
-    writeln!(log, "\nSummary:")?;
-    writeln!(log, "Total lines processed: {}", total_lines)?;
-    writeln!(log, "Passes: {}", pass_count)?;
-    writeln!(log, "Failures: {}", fail_count)?;
+    // Log processing completion with a timestamp.
+    let end_time = Local::now();
+    writeln!(log, "Processing completed: {}", end_time)?;
+    writeln!(log, "Output written to: {}", output_file)?;
+
+    if verbose {
+        println!("Processing completed. Log written to: {}", log_file);
+    }
 
     Ok(())
 }
 
-/// The entry point of the program.
-/// - Reads the input file path from command-line arguments.
-/// - Validates the file extension.
-/// - Processes the file and writes results to a log file.
+/// Entry point for the PL/I Preprocessor program.
+/// Handles command-line arguments and coordinates the workflow.
 fn main() {
-    let args: Vec<String> = env::args().collect(); // Collect command-line arguments into a vector.
+    // Collect command-line arguments.
+    let args: Vec<String> = env::args().collect();
 
-    if args.len() != 2 {
-        eprintln!("Usage: pli_tokenizer <input_file>");
-        std::process::exit(1); // Exit if the number of arguments is incorrect.
+    // Ensure the correct number of arguments are provided.
+    if args.len() < 4 || args.len() > 6 {
+        eprintln!(
+            "Usage: pli_preprocessor <input_file> <output_file> <log_file> [--verbose] [--dry-run]"
+        );
+        std::process::exit(1);
     }
 
+    // Extract input, output, and log file paths from arguments.
     let input_file = &args[1];
-    let log_file = "tests/output/pli_tokenizer.log"; // Log file path.
+    let output_file = &args[2];
+    let log_file = &args[3];
 
-    if !validate_file_extension(input_file) {
-        eprintln!("Error: Unsupported file extension. Only .pp and .pli files are allowed.");
-        std::process::exit(1); // Exit if the file extension is invalid.
+    // Check for optional flags.
+    let verbose = args.contains(&"--verbose".to_string());
+    let dry_run = args.contains(&"--dry-run".to_string());
+
+    // Validate the input file's extension.
+    let allowed_extensions = ["pp", "pli"];
+    if !allowed_extensions.iter().any(|ext| input_file.ends_with(ext)) {
+        eprintln!("Error: Unsupported input file extension. Only .pp and .pli files are allowed.");
+        std::process::exit(1);
     }
 
-    match process_file(input_file, log_file) {
-        Ok(_) => println!("Processing complete. Results written to {}", log_file),
+    // Process the file and handle any errors.
+    match process_file(input_file, output_file, log_file, verbose, dry_run) {
+        Ok(_) => println!("Processing complete."),
         Err(e) => eprintln!("Error processing file: {}", e),
     }
 }
