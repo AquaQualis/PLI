@@ -5,6 +5,9 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4"
+fern = "0.7.0"
+log = "0.4.22"
+regex = "1.7" 
 
 
 [lib]

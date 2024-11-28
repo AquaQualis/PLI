@@ -18,9 +18,20 @@ mod tests {
 
     #[test]
     fn test_long_line() {
-        let input = "%IF DEBUG %THEN; SET A = 'Long line with multiple tokens and 1234567890'; %ENDIF;";
+        let input =
+            "%IF DEBUG %THEN; SET A = 'Long line with multiple tokens and 1234567890'; %ENDIF;";
         let expected = vec![
-            "%IF", "DEBUG", "%THEN", ";", "SET", "A", "=", "'Long line with multiple tokens and 1234567890'", ";", "%ENDIF", ";"
+            "%IF",
+            "DEBUG",
+            "%THEN",
+            ";",
+            "SET",
+            "A",
+            "=",
+            "'Long line with multiple tokens and 1234567890'",
+            ";",
+            "%ENDIF",
+            ";",
         ];
         assert_eq!(tokenize_pli(input), expected);
     }
@@ -28,7 +39,16 @@ mod tests {
     #[test]
     fn test_mixed_content() {
         let input = "SET A = 'Regular PL/I code' %IF DEBUG %THEN;";
-        let expected = vec!["SET", "A", "=", "'Regular PL/I code'", "%IF", "DEBUG", "%THEN", ";"];
+        let expected = vec![
+            "SET",
+            "A",
+            "=",
+            "'Regular PL/I code'",
+            "%IF",
+            "DEBUG",
+            "%THEN",
+            ";",
+        ];
         assert_eq!(tokenize_pli(input), expected);
     }
 
@@ -36,7 +56,8 @@ mod tests {
     fn test_special_characters() {
         let input = "%IF DEBUG *&^%$#@!(){}[]<>;";
         let expected = vec![
-            "%IF", "DEBUG", "*", "&", "^", "%", "$", "#", "@", "!", "(", ")", "{", "}", "[", "]", "<", ">", ";"
+            "%IF", "DEBUG", "*", "&", "^", "%", "$", "#", "@", "!", "(", ")", "{", "}", "[", "]",
+            "<", ">", ";",
         ];
         assert_eq!(tokenize_pli(input), expected);
     }
@@ -48,4 +69,3 @@ mod tests {
         assert_eq!(tokenize_pli(input), expected);
     }
 }
-
