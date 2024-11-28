@@ -1,17 +1,17 @@
 #![allow(dead_code)] // Suppress warnings for unused functions in this module.
+
 ////////////////////////////////////////////////////////////////////////////////
 // MODULE NAME: Tokenizer
 // -----------------------------------------------------------------------------
 // Description:
-// This module provides functionality to tokenize lines of PL/I preprocessor 
-// code. It splits input lines into meaningful tokens, including strings, 
-// directives, operators, and special characters.
+// This module provides functionality for tokenizing lines of PL/I preprocessor 
+// code. The tokenizer converts input lines into meaningful tokens, handling
+// strings, directives, operators, and special characters.
 //
-// Functions:
-// - `tokenize_pli`: Splits a line into tokens.
-// - `is_valid_preprocessor_directive`: Checks if the line starts with a valid
-//   preprocessor directive.
-// - `has_tokenizer_error`: Detects tokenizer errors (e.g., unclosed strings).
+// Features:
+// - Tokenization of PL/I preprocessor lines into categorized tokens.
+// - Handling of nested directives, strings, and special characters.
+// - Error detection for malformed tokens (e.g., unmatched strings).
 //
 // Author: Jean-Pierre Sainfeld
 // Assistant: ChatGPT
@@ -19,148 +19,225 @@
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-/// Tokenizes a single line of PL/I code.
-/// 
-/// This function splits the input string into meaningful tokens such as 
-/// strings, directives, and operators.
-/// 
-/// # Arguments
-/// - `text`: A reference to a string slice containing the line to tokenize.
-///
-/// # Returns
-/// A `Vec<String>` containing the tokens extracted from the input line.
-pub fn tokenize_pli(text: &str) -> Vec<String> {
+use log::debug;
+use std::collections::HashMap;
+use std::iter::Peekable;
+use std::str::Chars;
 
-    // Initialize some useful variables
-    let mut tokens = Vec::new(); // Vector to hold tokens.
-    let mut current_token = String::new(); // Temporary buffer for building tokens.
-    let mut in_string = false; // Boolean flag to track if we're inside a string literal.
+////////////////////////////////////////////////////////////////////////////////
+// STRUCT: Token
+// -----------------------------------------------------------------------------
+// Represents a token in the PL/I tokenizer. Each token consists of its raw text 
+// value, a general category, and an optional specific category if it is a directive.
+// -----------------------------------------------------------------------------
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Token {
+    pub value: String, // The raw text of the token.
+    pub category: TokenCategory, // General category (e.g., Directive, Identifier, etc.).
+    pub directive_category: Option<DirectiveCategory>, // Specific directive category (if applicable).
+}
 
-    let mut chars = text.chars().peekable(); // Create an iterator over characters with lookahead.
-
-    // Process each character 
-    while let Some(c) = chars.next() {
-
-        // Handle string literals enclosed in single quotes (e.g., 'text').
-        // Collects all characters until the closing quote and saves it as a single token.
-        // Detects when you're inside a string literal (e.g., 'hello world').
-        // Appends all characters, including quotes, to current_token.
-        //Once the closing ' is found, it saves the string as a token.
-        if in_string {
-            current_token.push(c); // Append character to the current token.
-            if c == '\'' {
-                // End of a string literal.
-                in_string = false;
-                tokens.push(current_token.clone()); // Save the token.
-                current_token.clear(); // Reset for the next token.
-            }
-        } else if c == '\'' {
-            // Start of a string literal.
-            in_string = true;
-            current_token.push(c);
-
-        // Handle Preprocessor Directives
-        // Starts a directive when % is encountered (e.g., %IF, %THEN).
-        // Collects alphanumeric characters following % to form the full directive token.
-        // Converts it to uppercase (e.g., %if → %IF) before saving it.
-        } else if c == '%' {
-            // Start of a preprocessor directive.
-            current_token.push(c);
-            while let Some(&next_c) = chars.peek() {
-                // Lookahead to include alphanumeric characters.
-                if next_c.is_alphanumeric() {
-                    current_token.push(next_c);
-                    chars.next(); // Consume the character.
-                } else {
-                    break;
-                }
-            }
-            tokens.push(current_token.to_uppercase()); // Save the directive token.
-            current_token.clear();
-
-        // Handle Whitespace
-        // Ends the current token when whitespace is encountered.
-        // Converts the current token to uppercase before saving.
-        } else if c.is_whitespace() {
-            // End of a token when whitespace is encountered.
-            if !current_token.is_empty() {
-                tokens.push(current_token.to_uppercase()); // Convert to uppercase.
-                current_token.clear();
-            }
-
-        // Handle Special Characters
-        // Treats special characters (!@#$%^&*, etc.) as tokens.
-        // Combines a special character (e.g., @) with alphanumeric characters if present (e.g., @INVALID_CHAR).
-
-        } else if "!@#$%^&*()-+=[]{}|\\:;,.<>?/".contains(c) {
-            // Handle special characters as standalone tokens or part of combined tokens.
-            if !current_token.is_empty() {
-                tokens.push(current_token.to_uppercase()); // Save the previous token in uppercase.
-                current_token.clear();
-            }
-
-            // Check if the special character should be appended to the last token.
-            if ".,".contains(c) && !tokens.is_empty() && tokens.last().unwrap().chars().all(char::is_alphabetic) {
-                // Append punctuation to the previous token if it’s plain text.
-                let last_token = tokens.pop().unwrap();
-                tokens.push(format!("{}{}", last_token, c).to_uppercase());
-            } else {
-                current_token.push(c); // Start with the special character.
-                while let Some(&next_c) = chars.peek() {
-                    if next_c.is_alphanumeric() || next_c == '_' {
-                        current_token.push(next_c); // Combine alphanumeric characters.
-                        chars.next(); // Consume the character.
-                    } else {
-                        break;
-                    }
-                }
-                tokens.push(current_token.to_uppercase()); // Save the combined token.
-                current_token.clear();
-            }
-
-        // Handle regular token
-        // Builds "regular" tokens by appending characters.
-        } else {
-            // Build regular tokens.
-            current_token.push(c);
+impl Token {
+    /// Creates a new `Token` instance.
+    ///
+    /// # Arguments
+    /// - `value`: The raw text of the token.
+    /// - `category`: The general category of the token.
+    /// - `directive_category`: An optional specific category if the token is a directive.
+    ///
+    /// # Returns
+    /// A new `Token` instance.
+    ///
+    /// # Example
+    /// ```rust
+    /// let token = Token::new("%IF", TokenCategory::Directive, Some(DirectiveCategory::ControlFlow));
+    /// ```
+    pub fn new(value: &str, category: TokenCategory, directive_category: Option<DirectiveCategory>) -> Self {
+        Self {
+            value: value.to_string(),
+            category,
+            directive_category,
         }
     }
+}
 
-    // Handle last token
-    // Ensures the last token (if any) is saved after the loop ends.
-    if !current_token.is_empty() {
-        tokens.push(current_token.to_uppercase()); // Save the last token if any in uppercase.
+////////////////////////////////////////////////////////////////////////////////
+// ENUM: TokenCategory
+// -----------------------------------------------------------------------------
+// Enumerates general categories for tokens.
+// -----------------------------------------------------------------------------
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TokenCategory {
+    Directive,  // Preprocessor directives like %IF, %THEN
+    Identifier, // Variables, function names, etc.
+    Literal,    // Strings, numbers, etc.
+    Operator,   // +, -, *, etc.
+    Separator,  // , ; ( ) { }
+    Unknown,    // For unexpected or malformed tokens
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ENUM: DirectiveCategory
+// -----------------------------------------------------------------------------
+// Enumerates specific categories for preprocessor directives.
+// -----------------------------------------------------------------------------
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum DirectiveCategory {
+    ControlFlow,       // Directives like %IF, %THEN, %ELSE, %ENDIF
+    MacroHandling,     // Directives like %MACRO, %INCLUDE
+    Conditional,       // Directives like %EVALUATE, %SWITCH, %CASE
+    Comment,           // Directives like %COMMENT
+    Other,             // For undefined or unrecognized directives
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTION: directive_categories
+// -----------------------------------------------------------------------------
+// Returns a mapping of PL/I preprocessor directives to their specific categories.
+// -----------------------------------------------------------------------------
+pub fn directive_categories() -> HashMap<&'static str, DirectiveCategory> {
+    let mut categories = HashMap::new();
+
+    // Control Flow
+    categories.insert("%IF", DirectiveCategory::ControlFlow);
+    categories.insert("%THEN", DirectiveCategory::ControlFlow);
+    categories.insert("%ELSE", DirectiveCategory::ControlFlow);
+    categories.insert("%ENDIF", DirectiveCategory::ControlFlow);
+
+    // Macro Handling
+    categories.insert("%MACRO", DirectiveCategory::MacroHandling);
+    categories.insert("%INCLUDE", DirectiveCategory::MacroHandling);
+
+    // Conditional
+    categories.insert("%SWITCH", DirectiveCategory::Conditional);
+    categories.insert("%CASE", DirectiveCategory::Conditional);
+    categories.insert("%EVALUATE", DirectiveCategory::Conditional);
+
+    // Comment
+    categories.insert("%COMMENT", DirectiveCategory::Comment);
+
+    categories
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTION: get_directive_category
+// -----------------------------------------------------------------------------
+// Retrieves the category of a given PL/I preprocessor directive.
+// -----------------------------------------------------------------------------
+pub fn get_directive_category(directive: &str) -> DirectiveCategory {
+    directive_categories()
+        .get(directive)
+        .cloned()
+        .unwrap_or(DirectiveCategory::Other)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTION: tokenize_pli
+// -----------------------------------------------------------------------------
+// Tokenizes a given PL/I input string into a vector of categorized tokens.
+// -----------------------------------------------------------------------------
+pub fn tokenize_pli(input: &str) -> Vec<Token> {
+    let mut chars = input.chars().peekable();
+    let mut tokens = Vec::new();
+    let mut current_token = String::new();
+    let mut in_string = false;
+
+    println!("Tokenizing Input: {}", input); // Debug log
+
+    while let Some(c) = chars.next() {
+        if c.is_whitespace() && !in_string {
+            if !current_token.is_empty() {
+                println!("Whitespace found, token finalized: {}", current_token); // Debug log
+                tokens.push(Token::new(
+                    &current_token,
+                    TokenCategory::Identifier,
+                    None,
+                ));
+                current_token.clear();
+            }
+            continue;
+        }
+
+        if c == '\'' {
+            handle_string_literal(c, &mut chars, &mut in_string, &mut current_token, &mut tokens);
+            continue;
+        }
+
+        if c.is_alphanumeric() || c == '_' {
+            current_token.push(c);
+            continue;
+        }
+
+        handle_special_characters(c, &mut chars, &mut current_token, &mut tokens);
     }
 
-    println!("Tokens for '{}': {:?}", text, tokens); // Log the tokens generated.
+    if !current_token.is_empty() {
+        println!("Finalizing last token: {}", current_token); // Debug log
+        tokens.push(Token::new(&current_token, TokenCategory::Identifier, None));
+    }
+
+    println!("Generated Tokens: {:?}", tokens); // Debug log
     tokens
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTION: handle_string_literal
+// -----------------------------------------------------------------------------
+// Handles string literals in the input, ensuring proper tokenization.
+// -----------------------------------------------------------------------------
+pub fn handle_string_literal(
+    current_char: char,
+    chars: &mut Peekable<Chars>,
+    in_string: &mut bool,
+    current_token: &mut String,
+    tokens: &mut Vec<Token>,
+) {
+    *in_string = true;
+    current_token.push(current_char);
 
+    while let Some(&next_char) = chars.peek() {
+        current_token.push(next_char);
+        chars.next();
 
-/// Determines whether a line starts with a valid preprocessor directive.
-///
-/// # Arguments
-/// - `tokens`: A reference to a vector of tokens.
-///
-/// # Returns
-/// `true` if the first token matches a valid directive, otherwise `false`.
-pub fn is_valid_preprocessor_directive(tokens: &[String]) -> bool {
-    let valid_directives = ["%IF", "%DO", "%MACRO", "%END", "%ENDIF", "%INCLUDE", "%COMMENT"];
-    if let Some(first_token) = tokens.get(0) {
-        return valid_directives.contains(&first_token.as_str());
+        if next_char == '\'' {
+            *in_string = false;
+            break;
+        }
     }
-    false
+
+    tokens.push(Token::new(
+        current_token.trim(),
+        TokenCategory::Literal,
+        None,
+    ));
+    current_token.clear();
 }
 
-/// Checks for errors in tokenized lines (e.g., unclosed strings).
-///
-/// # Arguments
-/// - `tokens`: A reference to a vector of tokens.
-///
-/// # Returns
-/// `true` if a tokenizer error is found, otherwise `false`.
-pub fn has_tokenizer_error(tokens: &[String]) -> bool {
-    tokens.iter().any(|token| token.starts_with("'") && !token.ends_with("'"))
-}
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTION: handle_special_characters
+// -----------------------------------------------------------------------------
+// Processes special characters like `;`, `#`, `=` into appropriate tokens.
+// -----------------------------------------------------------------------------
+pub fn handle_special_characters(
+    c: char,
+    _chars: &mut Peekable<Chars>,
+    current_token: &mut String,
+    tokens: &mut Vec<Token>,
+) {
+    if !current_token.is_empty() {
+        println!("Token finalized before special char: {}", current_token); // Debug log
+        tokens.push(Token::new(
+            current_token,
+            TokenCategory::Identifier,
+            None,
+        ));
+        current_token.clear();
+    }
 
+    let token_category = match c {
+        '=' | ';' | '#' | '*' => TokenCategory::Operator,
+        _ => TokenCategory::Unknown,
+    };
+
+    tokens.push(Token::new(&c.to_string(), token_category, None));
+}
