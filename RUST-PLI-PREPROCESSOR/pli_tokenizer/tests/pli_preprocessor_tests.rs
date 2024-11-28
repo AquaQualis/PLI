@@ -4,8 +4,8 @@
 // TEST SUITE: PL/I Preprocessor Tests
 // -----------------------------------------------------------------------------
 // Description:
-// This test suite validates the functionality of the PL/I Preprocessor, 
-// ensuring that tokenization, handling of directives, and other edge cases 
+// This test suite validates the functionality of the PL/I Preprocessor,
+// ensuring that tokenization, handling of directives, and other edge cases
 // are implemented correctly.
 //
 // Tests Include:
@@ -28,15 +28,15 @@
 #[cfg(test)]
 mod tests {
     use pli_tokenizer::modules::tokenizer::{
-        tokenize_pli, Token, TokenCategory, DirectiveCategory,
-        is_valid_preprocessor_directive, handle_string_literal,
+        handle_string_literal, is_valid_preprocessor_directive, tokenize_pli, DirectiveCategory,
+        Token, TokenCategory,
     };
 
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: Valid File
     // -----------------------------------------------------------------------------
     // Ensures that syntactically valid PL/I files are tokenized correctly.
-    // Each line is tokenized, and the resulting tokens are checked to ensure 
+    // Each line is tokenized, and the resulting tokens are checked to ensure
     // correctness.
     ////////////////////////////////////////////////////////////////////////////////
     #[test]
@@ -60,22 +60,22 @@ mod tests {
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: Invalid File
     // -----------------------------------------------------------------------------
-    // Ensures that invalid input lines (e.g., unsupported directives, empty lines, 
+    // Ensures that invalid input lines (e.g., unsupported directives, empty lines,
     // or plain text) are either skipped or flagged as errors.
     ////////////////////////////////////////////////////////////////////////////////
     #[test]
     fn test_invalid_file() {
-        let lines = vec![
-            "@INVALID_DIRECTIVE;",
-            "",
-            "Plain text without directives",
-        ];
+        let lines = vec!["@INVALID_DIRECTIVE;", "", "Plain text without directives"];
 
         for (line_number, line) in lines.iter().enumerate() {
             let tokens = tokenize_pli(line);
 
             if line.trim().is_empty() {
-                assert!(tokens.is_empty(), "Expected no tokens for empty line {}", line_number + 1);
+                assert!(
+                    tokens.is_empty(),
+                    "Expected no tokens for empty line {}",
+                    line_number + 1
+                );
             } else {
                 assert!(
                     !is_valid_preprocessor_directive(&tokens),
@@ -110,7 +110,11 @@ mod tests {
         let tokens = tokenize_pli(line);
 
         assert!(
-            tokens.contains(&Token::new("%IF", TokenCategory::Directive, Some(DirectiveCategory::ControlFlow))),
+            tokens.contains(&Token::new(
+                "%IF",
+                TokenCategory::Directive,
+                Some(DirectiveCategory::ControlFlow)
+            )),
             "Expected '%IF' token for case-insensitive directive"
         );
     }
@@ -137,7 +141,7 @@ mod tests {
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: Handle String Literal
     // -----------------------------------------------------------------------------
-    // Verifies that string literals enclosed in single quotes are tokenized as 
+    // Verifies that string literals enclosed in single quotes are tokenized as
     // a single token, even if they contain spaces or special characters.
     ////////////////////////////////////////////////////////////////////////////////
     #[test]
@@ -177,7 +181,11 @@ mod tests {
 
         assert_eq!(
             tokens,
-            vec![Token::new("%IFDEBUG", TokenCategory::Directive, Some(DirectiveCategory::MacroHandling))],
+            vec![Token::new(
+                "%IFDEBUG",
+                TokenCategory::Directive,
+                Some(DirectiveCategory::MacroHandling)
+            )],
             "Failed to tokenize directive correctly"
         );
     }
@@ -185,7 +193,7 @@ mod tests {
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: Complex Inputs
     // -----------------------------------------------------------------------------
-    // Validates tokenization of complex input lines containing directives, 
+    // Validates tokenization of complex input lines containing directives,
     // string literals, and special characters.
     ////////////////////////////////////////////////////////////////////////////////
     #[test]
@@ -193,11 +201,19 @@ mod tests {
         let line = "%IF DEBUG = 1 %THEN 'This is a test'; #SPECIAL_CHARS;";
         let tokens = tokenize_pli(line);
         let expected = vec![
-            Token::new("%IF", TokenCategory::Directive, Some(DirectiveCategory::ControlFlow)),
+            Token::new(
+                "%IF",
+                TokenCategory::Directive,
+                Some(DirectiveCategory::ControlFlow),
+            ),
             Token::new("DEBUG", TokenCategory::Identifier, None),
             Token::new("=", TokenCategory::Operator, None),
             Token::new("1", TokenCategory::Literal, None),
-            Token::new("%THEN", TokenCategory::Directive, Some(DirectiveCategory::ControlFlow)),
+            Token::new(
+                "%THEN",
+                TokenCategory::Directive,
+                Some(DirectiveCategory::ControlFlow),
+            ),
             Token::new("'This is a test'", TokenCategory::Literal, None),
             Token::new(";", TokenCategory::Separator, None),
             Token::new("#", TokenCategory::Operator, None),
@@ -219,7 +235,9 @@ mod tests {
         let tokens = tokenize_pli(line);
 
         assert!(
-            tokens.iter().any(|t| t.value.starts_with("'") && !t.value.ends_with("'")),
+            tokens
+                .iter()
+                .any(|t| t.value.starts_with("'") && !t.value.ends_with("'")),
             "Failed to detect unmatched string literal"
         );
     }

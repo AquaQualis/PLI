@@ -4,7 +4,7 @@
 // MODULE NAME: Tokenizer
 // -----------------------------------------------------------------------------
 // Description:
-// This module provides functionality for tokenizing lines of PL/I preprocessor 
+// This module provides functionality for tokenizing lines of PL/I preprocessor
 // code. The tokenizer converts input lines into meaningful tokens, handling
 // strings, directives, operators, and special characters.
 //
@@ -27,12 +27,12 @@ use std::str::Chars;
 ////////////////////////////////////////////////////////////////////////////////
 // STRUCT: Token
 // -----------------------------------------------------------------------------
-// Represents a token in the PL/I tokenizer. Each token consists of its raw text 
+// Represents a token in the PL/I tokenizer. Each token consists of its raw text
 // value, a general category, and an optional specific category if it is a directive.
 // -----------------------------------------------------------------------------
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
-    pub value: String, // The raw text of the token.
+    pub value: String,                                 // The raw text of the token.
     pub category: TokenCategory, // General category (e.g., Directive, Identifier, etc.).
     pub directive_category: Option<DirectiveCategory>, // Specific directive category (if applicable).
 }
@@ -52,7 +52,11 @@ impl Token {
     /// ```rust
     /// let token = Token::new("%IF", TokenCategory::Directive, Some(DirectiveCategory::ControlFlow));
     /// ```
-    pub fn new(value: &str, category: TokenCategory, directive_category: Option<DirectiveCategory>) -> Self {
+    pub fn new(
+        value: &str,
+        category: TokenCategory,
+        directive_category: Option<DirectiveCategory>,
+    ) -> Self {
         Self {
             value: value.to_string(),
             category,
@@ -83,11 +87,11 @@ pub enum TokenCategory {
 // -----------------------------------------------------------------------------
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum DirectiveCategory {
-    ControlFlow,       // Directives like %IF, %THEN, %ELSE, %ENDIF
-    MacroHandling,     // Directives like %MACRO, %INCLUDE
-    Conditional,       // Directives like %EVALUATE, %SWITCH, %CASE
-    Comment,           // Directives like %COMMENT
-    Other,             // For undefined or unrecognized directives
+    ControlFlow,   // Directives like %IF, %THEN, %ELSE, %ENDIF
+    MacroHandling, // Directives like %MACRO, %INCLUDE
+    Conditional,   // Directives like %EVALUATE, %SWITCH, %CASE
+    Comment,       // Directives like %COMMENT
+    Other,         // For undefined or unrecognized directives
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,18 +152,20 @@ pub fn tokenize_pli(input: &str) -> Vec<Token> {
         if c.is_whitespace() && !in_string {
             if !current_token.is_empty() {
                 println!("Whitespace found, token finalized: {}", current_token); // Debug log
-                tokens.push(Token::new(
-                    &current_token,
-                    TokenCategory::Identifier,
-                    None,
-                ));
+                tokens.push(Token::new(&current_token, TokenCategory::Identifier, None));
                 current_token.clear();
             }
             continue;
         }
 
         if c == '\'' {
-            handle_string_literal(c, &mut chars, &mut in_string, &mut current_token, &mut tokens);
+            handle_string_literal(
+                c,
+                &mut chars,
+                &mut in_string,
+                &mut current_token,
+                &mut tokens,
+            );
             continue;
         }
 
@@ -226,11 +232,7 @@ pub fn handle_special_characters(
 ) {
     if !current_token.is_empty() {
         println!("Token finalized before special char: {}", current_token); // Debug log
-        tokens.push(Token::new(
-            current_token,
-            TokenCategory::Identifier,
-            None,
-        ));
+        tokens.push(Token::new(current_token, TokenCategory::Identifier, None));
         current_token.clear();
     }
 
