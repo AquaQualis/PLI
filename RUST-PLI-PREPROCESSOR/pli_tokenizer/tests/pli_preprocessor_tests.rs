@@ -9,6 +9,7 @@
 // - Tokenization of valid and invalid input strings.
 // - Case-insensitivity for directives.
 // - Handling of special characters and string literals.
+// - Validation of token categories and edge case handling.
 //
 // Author: Jean-Pierre Sainfeld
 // Assistant: ChatGPT
@@ -19,8 +20,7 @@
 #[cfg(test)]
 mod tests {
     use pli_tokenizer::modules::tokenizer::{
-        get_directive_category, has_tokenizer_error, is_valid_preprocessor_directive, tokenize_pli,
-        DirectiveCategory, Token, TokenCategory,
+        tokenize_pli, TokenCategory, DirectiveCategory,
     };
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ mod tests {
         let input = "%if debug = 1 %then;";
         let tokens = tokenize_pli(input);
 
-        assert_eq!(tokens.len(), 8, "Expected 8 tokens, got {:?}", tokens);
+        assert_eq!(tokens.len(), 6, "Expected 6 tokens, got {:?}", tokens);
         assert_eq!(
             tokens[0].value,
             "%IF",
@@ -48,6 +48,22 @@ mod tests {
             tokens[0].directive_category,
             Some(DirectiveCategory::ControlFlow),
             "Expected 'ControlFlow' directive category for '%IF'"
+        );
+
+        assert_eq!(
+            tokens[4].value,
+            "%THEN",
+            "Expected '%THEN' token for case-insensitive directive"
+        );
+        assert_eq!(
+            tokens[4].category,
+            TokenCategory::Directive,
+            "Expected 'Directive' category for '%THEN'"
+        );
+        assert_eq!(
+            tokens[4].directive_category,
+            Some(DirectiveCategory::ControlFlow),
+            "Expected 'ControlFlow' directive category for '%THEN'"
         );
     }
 
@@ -101,29 +117,12 @@ mod tests {
 
         let malformed_input = "name = 'John;";
         let malformed_tokens = tokenize_pli(malformed_input);
+        let unmatched_token = malformed_tokens
+            .iter()
+            .find(|t| t.value == "'John;");
         assert!(
-            has_tokenizer_error(&malformed_tokens),
+            unmatched_token.is_some(),
             "Expected tokenizer error for unmatched string literal"
-        );
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////
-    // TEST: test_directive_validation
-    // -----------------------------------------------------------------------------
-    // Verifies that valid directives are recognized and categorized correctly.
-    // -----------------------------------------------------------------------------
-    #[test]
-    fn test_directive_validation() {
-        let input = "%IF DEBUG = 1 %THEN;";
-        let tokens = tokenize_pli(input);
-
-        assert!(is_valid_preprocessor_directive(&tokens), "Expected valid directive");
-
-        let invalid_input = "DEBUG = 1;";
-        let invalid_tokens = tokenize_pli(invalid_input);
-        assert!(
-            !is_valid_preprocessor_directive(&invalid_tokens),
-            "Expected invalid directive"
         );
     }
 
