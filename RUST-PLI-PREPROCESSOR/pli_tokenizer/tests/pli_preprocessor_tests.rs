@@ -28,10 +28,10 @@
 #[cfg(test)]
 mod tests {
     use pli_tokenizer::modules::tokenizer::{
-        handle_string_literal, is_valid_preprocessor_directive, tokenize_pli, DirectiveCategory,
-        Token, TokenCategory,
+        handle_directive, handle_special_characters, handle_string_literal,
+        tokenize_pli, is_valid_preprocessor_directive, Token, TokenCategory, DirectiveCategory,
     };
-
+    
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: Valid File
     // -----------------------------------------------------------------------------
