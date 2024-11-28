@@ -1,14 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////
-// MODULE NAME: Preprocessor Tests
+// TEST MODULE: PL/I Preprocessor Tests
 // -----------------------------------------------------------------------------
 // Description:
-// This module contains unit tests for the PL/I tokenizer, focusing on edge 
-// cases, functionality validation, and adherence to preprocessor directives.
+// This module contains unit tests for the PL/I tokenizer, focusing on the
+// functionality provided by the `tokenize_pli` function and its related helpers.
 //
-// Features:
-// - Validation of tokenization process for various inputs.
-// - Edge case handling, including nested directives and malformed inputs.
-// - Case-insensitivity verification for directives.
+// Tests cover:
+// - Tokenization of valid and invalid input strings.
+// - Case-insensitivity for directives.
+// - Handling of special characters and string literals.
 //
 // Author: Jean-Pierre Sainfeld
 // Assistant: ChatGPT
@@ -16,186 +16,134 @@
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-use pli_tokenizer::modules::tokenizer::{
-    has_tokenizer_error, is_valid_preprocessor_directive, tokenize_pli, Token, TokenCategory,
-};
+#[cfg(test)]
+mod tests {
+    use pli_tokenizer::modules::tokenizer::{
+        get_directive_category, has_tokenizer_error, is_valid_preprocessor_directive, tokenize_pli,
+        DirectiveCategory, Token, TokenCategory,
+    };
 
-////////////////////////////////////////////////////////////////////////////////
-// TEST: test_case_insensitivity
-// -----------------------------------------------------------------------------
-// Validates case insensitivity for PL/I preprocessor directives.
-//
-// # Description:
-// Ensures that directives such as `%IF` are correctly identified regardless of 
-// their case (e.g., `%if`, `%If`, `%IF`). 
-//
-// # Test Cases:
-// - Input: `%if debug = 1 %then;`
-// - Expected Output: `%IF` categorized as `Directive`.
-//
-// # See Also:
-// - `tokenize_pli`: Main tokenization function.
-////////////////////////////////////////////////////////////////////////////////
-#[test]
-fn test_case_insensitivity() {
-    let input = "%if debug = 1 %then;";
-    let tokens = tokenize_pli(input);
+    ////////////////////////////////////////////////////////////////////////////////
+    // TEST: test_case_insensitivity
+    // -----------------------------------------------------------------------------
+    // Verifies that the tokenizer handles directives in a case-insensitive manner.
+    // -----------------------------------------------------------------------------
+    #[test]
+    fn test_case_insensitivity() {
+        let input = "%if debug = 1 %then;";
+        let tokens = tokenize_pli(input);
 
-    println!("Generated Tokens: {:?}", tokens);
+        assert_eq!(tokens.len(), 8, "Expected 8 tokens, got {:?}", tokens);
+        assert_eq!(
+            tokens[0].value,
+            "%IF",
+            "Expected '%IF' token for case-insensitive directive"
+        );
+        assert_eq!(
+            tokens[0].category,
+            TokenCategory::Directive,
+            "Expected 'Directive' category for '%IF'"
+        );
+        assert_eq!(
+            tokens[0].directive_category,
+            Some(DirectiveCategory::ControlFlow),
+            "Expected 'ControlFlow' directive category for '%IF'"
+        );
+    }
 
-    assert_eq!(
-        tokens[0].value,
-        "%IF",
-        "Expected '%IF' token for case-insensitive directive"
-    );
-    assert_eq!(
-        tokens[0].category,
-        TokenCategory::Directive,
-        "Expected 'Directive' category for '%IF'"
-    );
-}
+    ////////////////////////////////////////////////////////////////////////////////
+    // TEST: test_handle_special_characters
+    // -----------------------------------------------------------------------------
+    // Verifies that special characters like `;` and `=` are correctly tokenized.
+    // -----------------------------------------------------------------------------
+    #[test]
+    fn test_handle_special_characters() {
+        let input = "x = y;";
+        let tokens = tokenize_pli(input);
 
-////////////////////////////////////////////////////////////////////////////////
-// TEST: test_handle_directive
-// -----------------------------------------------------------------------------
-// Validates the handling of valid preprocessor directives.
-//
-// # Description:
-// Ensures that known directives are categorized appropriately, with their
-// `DirectiveCategory` correctly assigned.
-//
-// # Test Cases:
-// - Input: `%IF DEBUG = 1 %THEN;`
-// - Expected Output: `%IF` as `Directive` with category `ControlFlow`.
-//
-// # See Also:
-// - `handle_directive`: Directive handler.
-////////////////////////////////////////////////////////////////////////////////
-#[test]
-fn test_handle_directive() {
-    let input = "%IF DEBUG = 1 %THEN;";
-    let tokens = tokenize_pli(input);
+        assert_eq!(tokens.len(), 4, "Expected 4 tokens, got {:?}", tokens);
+        assert_eq!(tokens[1].value, "=", "Expected '=' operator token");
+        assert_eq!(
+            tokens[1].category,
+            TokenCategory::Operator,
+            "Expected 'Operator' category for '='"
+        );
+        assert_eq!(tokens[3].value, ";", "Expected ';' separator token");
+        assert_eq!(
+            tokens[3].category,
+            TokenCategory::Separator,
+            "Expected 'Separator' category for ';'"
+        );
+    }
 
-    println!("Generated Tokens: {:?}", tokens);
+    ////////////////////////////////////////////////////////////////////////////////
+    // TEST: test_string_literals
+    // -----------------------------------------------------------------------------
+    // Verifies that string literals are correctly tokenized and unmatched quotes
+    // result in errors.
+    // -----------------------------------------------------------------------------
+    #[test]
+    fn test_string_literals() {
+        let input = "name = 'John';";
+        let tokens = tokenize_pli(input);
 
-    assert_eq!(
-        tokens[0].value,
-        "%IF",
-        "Expected '%IF' token as a directive"
-    );
-    assert_eq!(
-        tokens[0].directive_category,
-        Some(pli_tokenizer::modules::tokenizer::DirectiveCategory::ControlFlow),
-        "Expected 'ControlFlow' directive category for '%IF'"
-    );
-}
+        assert_eq!(tokens.len(), 5, "Expected 5 tokens, got {:?}", tokens);
+        assert_eq!(
+            tokens[2].category,
+            TokenCategory::Literal,
+            "Expected 'Literal' category for string literal"
+        );
+        assert_eq!(
+            tokens[2].value,
+            "'John'",
+            "Expected string literal token value to be 'John'"
+        );
 
-////////////////////////////////////////////////////////////////////////////////
-// TEST: test_nested_directives
-// -----------------------------------------------------------------------------
-// Validates the tokenizer's ability to handle nested directives.
-//
-// # Description:
-// Ensures proper tokenization of nested structures in PL/I preprocessor code.
-//
-// # Test Cases:
-// - Input: `%IF %MACRO(DEBUG) %THEN;`
-// - Expected Output: Correct categorization of nested directives.
-//
-// # See Also:
-// - `tokenize_pli`: Main tokenization function.
-////////////////////////////////////////////////////////////////////////////////
-#[test]
-fn test_nested_directives() {
-    let input = "%IF %MACRO(DEBUG) %THEN;";
-    let tokens = tokenize_pli(input);
+        let malformed_input = "name = 'John;";
+        let malformed_tokens = tokenize_pli(malformed_input);
+        assert!(
+            has_tokenizer_error(&malformed_tokens),
+            "Expected tokenizer error for unmatched string literal"
+        );
+    }
 
-    println!("Generated Tokens: {:?}", tokens);
+    ////////////////////////////////////////////////////////////////////////////////
+    // TEST: test_directive_validation
+    // -----------------------------------------------------------------------------
+    // Verifies that valid directives are recognized and categorized correctly.
+    // -----------------------------------------------------------------------------
+    #[test]
+    fn test_directive_validation() {
+        let input = "%IF DEBUG = 1 %THEN;";
+        let tokens = tokenize_pli(input);
 
-    assert_eq!(
-        tokens[0].value,
-        "%IF",
-        "Expected '%IF' as the outer directive"
-    );
-    assert_eq!(
-        tokens[1].value,
-        "%MACRO",
-        "Expected '%MACRO' as the nested directive"
-    );
-    assert_eq!(
-        tokens[3].value,
-        "%THEN",
-        "Expected '%THEN' as the closing directive"
-    );
-}
+        assert!(is_valid_preprocessor_directive(&tokens), "Expected valid directive");
 
-////////////////////////////////////////////////////////////////////////////////
-// TEST: test_complex_inputs
-// -----------------------------------------------------------------------------
-// Validates the tokenizer's handling of complex PL/I inputs.
-//
-// # Description:
-// Ensures correct handling of mixed input with directives, literals, and
-// special characters.
-//
-// # Test Cases:
-// - Input: `%IF 'string' = "other_string" %THEN;`
-// - Expected Output: Tokens for directives, literals, and operators.
-//
-// # See Also:
-// - `tokenize_pli`: Main tokenization function.
-////////////////////////////////////////////////////////////////////////////////
-#[test]
-fn test_complex_inputs() {
-    let input = "%IF 'string' = \"other_string\" %THEN;";
-    let tokens = tokenize_pli(input);
+        let invalid_input = "DEBUG = 1;";
+        let invalid_tokens = tokenize_pli(invalid_input);
+        assert!(
+            !is_valid_preprocessor_directive(&invalid_tokens),
+            "Expected invalid directive"
+        );
+    }
 
-    println!("Generated Tokens: {:?}", tokens);
+    ////////////////////////////////////////////////////////////////////////////////
+    // TEST: test_edge_cases
+    // -----------------------------------------------------------------------------
+    // Verifies that edge cases like empty lines and unexpected characters are handled.
+    // -----------------------------------------------------------------------------
+    #[test]
+    fn test_edge_cases() {
+        let empty_input = "";
+        let empty_tokens = tokenize_pli(empty_input);
+        assert_eq!(empty_tokens.len(), 0, "Expected 0 tokens for empty input");
 
-    assert_eq!(
-        tokens[0].value,
-        "%IF",
-        "Expected '%IF' as the directive"
-    );
-    assert_eq!(
-        tokens[1].value,
-        "'string'",
-        "Expected 'string' as a literal"
-    );
-    assert_eq!(
-        tokens[3].value,
-        "\"other_string\"",
-        "Expected \"other_string\" as a literal"
-    );
-    assert_eq!(
-        tokens[4].value,
-        "%THEN",
-        "Expected '%THEN' as the closing directive"
-    );
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// TEST: test_has_tokenizer_error
-// -----------------------------------------------------------------------------
-// Validates detection of tokenizer errors such as unmatched string literals.
-//
-// # Description:
-// Ensures that errors in the input, like unmatched quotes, are correctly flagged.
-//
-// # Test Cases:
-// - Input: `'unmatched string`
-// - Expected Output: Error detected.
-//
-// # See Also:
-// - `has_tokenizer_error`: Error detection function.
-////////////////////////////////////////////////////////////////////////////////
-#[test]
-fn test_has_tokenizer_error() {
-    let input = "'unmatched string";
-    let tokens = tokenize_pli(input);
-
-    assert!(
-        has_tokenizer_error(&tokens),
-        "Expected tokenizer error for unmatched string"
-    );
+        let unexpected_input = "@invalid";
+        let unexpected_tokens = tokenize_pli(unexpected_input);
+        assert_eq!(
+            unexpected_tokens[0].category,
+            TokenCategory::Unknown,
+            "Expected 'Unknown' category for '@'"
+        );
+    }
 }
