@@ -36,7 +36,7 @@
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-use pli_tokenizer::modules::{
+use pli_preprocessor::modules::{
     conditional, evaluator, include_handler, logger, macro_expander, output,
     tokenizer::{has_tokenizer_error, is_valid_preprocessor_directive, tokenize_pli},
     validator,

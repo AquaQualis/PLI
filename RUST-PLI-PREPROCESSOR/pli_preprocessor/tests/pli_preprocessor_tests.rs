@@ -39,7 +39,7 @@
 
 #[cfg(test)]
 mod tests {
-    use pli_tokenizer::modules::tokenizer::{tokenize_pli, DirectiveCategory, TokenCategory};
+    use pli_preprocessor::modules::tokenizer::{tokenize_pli, DirectiveCategory, TokenCategory};
 
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: test_case_insensitivity
