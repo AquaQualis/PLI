@@ -1,5 +1,5 @@
 [package]
-name = "pli_tokenizer"
+name = "pli_preprocessor"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,6 +11,6 @@ regex = "1.7"
 
 
 [lib]
-name = "pli_tokenizer"
+name = "pli_preprocessor"
 path = "src/lib.rs"  # Declare the library entry point
 
