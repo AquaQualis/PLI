@@ -310,10 +310,7 @@ pub fn handle_string_literal(
     }
 
     // Handle unmatched string literal
-    debug!(
-        "Unmatched string literal detected: {}",
-        current_token
-    );
+    debug!("Unmatched string literal detected: {}", current_token);
     tokens.push(Token::new(
         current_token.trim(),
         TokenCategory::Literal,
@@ -321,7 +318,6 @@ pub fn handle_string_literal(
     ));
     current_token.clear();
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // FUNCTION: handle_special_characters
