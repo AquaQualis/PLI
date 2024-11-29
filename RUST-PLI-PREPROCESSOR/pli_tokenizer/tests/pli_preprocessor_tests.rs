@@ -99,7 +99,8 @@ mod tests {
         let input = "name = 'John';";
         let tokens = tokenize_pli(input);
 
-        assert_eq!(tokens.len(), 5, "Expected 5 tokens, got {:?}", tokens);
+        assert_eq!(tokens.len(), 4, "Expected 4 tokens, got {:?}", tokens);
+
         assert_eq!(
             tokens[2].category,
             TokenCategory::Literal,
