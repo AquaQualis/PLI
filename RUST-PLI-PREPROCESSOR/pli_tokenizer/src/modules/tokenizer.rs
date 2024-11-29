@@ -5,20 +5,41 @@
 // -----------------------------------------------------------------------------
 // Description:
 // This module provides functionality for tokenizing lines of PL/I preprocessor
-// code. The tokenizer converts input lines into meaningful tokens, handling
-// strings, directives, operators, and special characters.
+// code into meaningful tokens.
 //
 // Features:
 // - Tokenization of PL/I preprocessor lines into categorized tokens.
 // - Handling of nested directives, strings, and special characters.
-// - Error detection for malformed tokens (e.g., unmatched strings).
+// - Detection and reporting of malformed tokens (e.g., unmatched strings).
 //
-// Author: Jean-Pierre Sainfeld
-// Assistant: ChatGPT
-// Company: FirstLink Consulting Services (FLCS)
+// -----------------------------------------------------------------------------
+// FUNCTION INVENTORY:
+// -----------------------------------------------------------------------------
+// - tokenize_pli: Tokenizes PL/I input into tokens.
+// - get_directive_category: Retrieves the directive category.
+// - handle_directive: Processes directives starting with `%`.
+// - handle_string_literal: Handles string literals enclosed in quotes.
+// - handle_special_characters: Tokenizes special characters like `;` and `=`.
+// - finalize_token: Finalizes the current token being constructed.
+// - has_tokenizer_error: Detects errors like unmatched string literals.
+// - is_valid_preprocessor_directive: Validates the presence of valid directives.
+//
+// -----------------------------------------------------------------------------
+// AUTHOR:
+// -----------------------------------------------------------------------------
+// - Jean-Pierre Sainfeld
+//
+// -----------------------------------------------------------------------------
+// ASSISTANT:
+// -----------------------------------------------------------------------------
+// - ChatGPT
+//
+// -----------------------------------------------------------------------------
+// COMPANY:
+// -----------------------------------------------------------------------------
+// - FirstLink Consulting Services (FLCS)
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
-
 use log::debug;
 use std::collections::HashMap;
 use std::iter::Peekable;

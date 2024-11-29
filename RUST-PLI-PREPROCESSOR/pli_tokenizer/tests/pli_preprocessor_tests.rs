@@ -1,21 +1,41 @@
 ////////////////////////////////////////////////////////////////////////////////
-// TEST MODULE: PL/I Preprocessor Tests
+// MODULE NAME: PL/I Preprocessor Tests
 // -----------------------------------------------------------------------------
 // Description:
-// This module contains unit tests for the PL/I tokenizer, focusing on the
+// This module contains unit tests for the PL/I tokenizer. It validates the
 // functionality provided by the `tokenize_pli` function and its related helpers.
 //
-// Tests cover:
-// - Tokenization of valid and invalid input strings.
-// - Case-insensitivity for directives.
-// - Handling of special characters and string literals.
-// - Validation of token categories and edge case handling.
+// Features:
+// - Validates tokenization of valid and invalid input strings.
+// - Tests case-insensitivity for directives.
+// - Handles special characters and string literals.
+// - Validates token categories and edge case handling.
 //
-// Author: Jean-Pierre Sainfeld
-// Assistant: ChatGPT
-// Company: FirstLink Consulting Services (FLCS)
+// -----------------------------------------------------------------------------
+// TEST FUNCTION INVENTORY:
+// -----------------------------------------------------------------------------
+// - test_case_insensitivity: Validates case-insensitivity for directives.
+// - test_handle_special_characters: Verifies proper handling of special characters.
+// - test_string_literals: Ensures string literals are correctly tokenized.
+// - test_edge_cases: Validates edge case handling like empty or malformed input.
+//
+// -----------------------------------------------------------------------------
+// AUTHOR:
+// -----------------------------------------------------------------------------
+// - Jean-Pierre Sainfeld
+//
+// -----------------------------------------------------------------------------
+// ASSISTANT:
+// -----------------------------------------------------------------------------
+// - ChatGPT
+//
+// -----------------------------------------------------------------------------
+// COMPANY:
+// -----------------------------------------------------------------------------
+// - FirstLink Consulting Services (FLCS)
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
+
 
 #[cfg(test)]
 mod tests {
