@@ -1,0 +1,3 @@
+%IF DEBUG = 1 %THEN;
+'This is a test string';
+%SWITCH VAR; %CASE 1: %DEFAULT;
