@@ -152,9 +152,17 @@ pub fn tokenize_pli(input: &str) -> Vec<Token> {
         }
 
         match c {
-            '\'' => handle_string_literal(c, &mut chars, &mut in_string, &mut current_token, &mut tokens),
+            '\'' => handle_string_literal(
+                c,
+                &mut chars,
+                &mut in_string,
+                &mut current_token,
+                &mut tokens,
+            ),
             '%' => handle_directive(c, &mut chars, &mut current_token, &mut tokens),
-            '=' | '#' | '*' | ';' => handle_special_characters(c, &mut chars, &mut current_token, &mut tokens),
+            '=' | '#' | '*' | ';' => {
+                handle_special_characters(c, &mut chars, &mut current_token, &mut tokens)
+            }
             _ if c.is_alphanumeric() || c == '_' => current_token.push(c),
             _ => handle_special_characters(c, &mut chars, &mut current_token, &mut tokens),
         }
@@ -175,7 +183,11 @@ pub fn tokenize_pli(input: &str) -> Vec<Token> {
 ////////////////////////////////////////////////////////////////////////////////
 fn finalize_token(current_token: &mut String, tokens: &mut Vec<Token>) {
     if !current_token.is_empty() {
-        tokens.push(Token::new(&current_token.to_uppercase(), TokenCategory::Identifier, None));
+        tokens.push(Token::new(
+            &current_token.to_uppercase(),
+            TokenCategory::Identifier,
+            None,
+        ));
         current_token.clear();
     }
 }
@@ -229,7 +241,9 @@ pub fn handle_directive(
 // - `bool`: `true` if any errors are found, `false` otherwise.
 ////////////////////////////////////////////////////////////////////////////////
 pub fn has_tokenizer_error(tokens: &[Token]) -> bool {
-    tokens.iter().any(|token| token.value.starts_with("'") && !token.value.ends_with("'"))
+    tokens
+        .iter()
+        .any(|token| token.value.starts_with("'") && !token.value.ends_with("'"))
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -263,6 +277,9 @@ pub fn is_valid_preprocessor_directive(tokens: &[Token]) -> bool {
 // - `in_string`: A mutable reference to a flag tracking string literals.
 // - `current_token`: A mutable reference to the current token string.
 // - `tokens`: A mutable reference to the list of generated tokens.
+//
+// # See Also:
+// - `finalize_token`: Used to finalize tokens when necessary.
 ////////////////////////////////////////////////////////////////////////////////
 pub fn handle_string_literal(
     current_char: char,
@@ -271,6 +288,7 @@ pub fn handle_string_literal(
     current_token: &mut String,
     tokens: &mut Vec<Token>,
 ) {
+    debug!("Starting string literal handling: {}", current_char);
     *in_string = true;
     current_token.push(current_char);
 
@@ -280,10 +298,22 @@ pub fn handle_string_literal(
 
         if next_char == '\'' {
             *in_string = false;
-            break;
+            debug!("String literal completed: {}", current_token);
+            tokens.push(Token::new(
+                current_token.trim(),
+                TokenCategory::Literal,
+                None,
+            ));
+            current_token.clear();
+            return;
         }
     }
 
+    // Handle unmatched string literal
+    debug!(
+        "Unmatched string literal detected: {}",
+        current_token
+    );
     tokens.push(Token::new(
         current_token.trim(),
         TokenCategory::Literal,
@@ -291,6 +321,7 @@ pub fn handle_string_literal(
     ));
     current_token.clear();
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // FUNCTION: handle_special_characters

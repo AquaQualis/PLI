@@ -19,9 +19,7 @@
 
 #[cfg(test)]
 mod tests {
-    use pli_tokenizer::modules::tokenizer::{
-        tokenize_pli, TokenCategory, DirectiveCategory,
-    };
+    use pli_tokenizer::modules::tokenizer::{tokenize_pli, DirectiveCategory, TokenCategory};
 
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: test_case_insensitivity
@@ -35,8 +33,7 @@ mod tests {
 
         assert_eq!(tokens.len(), 6, "Expected 6 tokens, got {:?}", tokens);
         assert_eq!(
-            tokens[0].value,
-            "%IF",
+            tokens[0].value, "%IF",
             "Expected '%IF' token for case-insensitive directive"
         );
         assert_eq!(
@@ -51,8 +48,7 @@ mod tests {
         );
 
         assert_eq!(
-            tokens[4].value,
-            "%THEN",
+            tokens[4].value, "%THEN",
             "Expected '%THEN' token for case-insensitive directive"
         );
         assert_eq!(
@@ -110,16 +106,13 @@ mod tests {
             "Expected 'Literal' category for string literal"
         );
         assert_eq!(
-            tokens[2].value,
-            "'John'",
+            tokens[2].value, "'John'",
             "Expected string literal token value to be 'John'"
         );
 
         let malformed_input = "name = 'John;";
         let malformed_tokens = tokenize_pli(malformed_input);
-        let unmatched_token = malformed_tokens
-            .iter()
-            .find(|t| t.value == "'John;");
+        let unmatched_token = malformed_tokens.iter().find(|t| t.value == "'John;");
         assert!(
             unmatched_token.is_some(),
             "Expected tokenizer error for unmatched string literal"
