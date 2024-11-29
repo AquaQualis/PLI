@@ -1,0 +1,9 @@
+%DO I = 1 TO 5;
+    %IF I > 3 %THEN;
+        DISPLAY("I is greater than 3.");
+    %ENDIF;
+%END;
+
+SET MESSAGE = 'This is a string with special characters: %$&@!';
+%COMMENT Nested constructs are valid in PL/I;
+
