@@ -1,3 +1,5 @@
+#![allow(dead_code)] // Suppress warnings for unused functions in this module.
+
 ////////////////////////////////////////////////////////////////////////////////
 // TEST MODULE: Parser Tests
 // -----------------------------------------------------------------------------
@@ -16,8 +18,7 @@
 // -----------------------------------------------------------------------------
 // - test_parse_line: Tests single-line parsing functionality.
 // - test_parse_source: Tests full-source parsing and directive extraction.
-// - test_multiline_directives: Tests handling of multiline directives.
-// - test_error_handling: Tests syntax error detection in various scenarios.
+// - test_parse_statement: Tests the parsing of single PL/I statements.
 //
 // -----------------------------------------------------------------------------
 // AUTHOR:
@@ -36,12 +37,11 @@
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // IMPORTS
 ////////////////////////////////////////////////////////////////////////////////
 
-use pli_tokenizer::modules::parser::{parse_line, parse_source};
+use pli_preprocessor::modules::parser::{parse_line, parse_source, parse_statement};
 use std::collections::HashMap;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,17 +58,25 @@ fn test_parse_line() {
 }
 
 #[test]
+fn test_parse_statement() {
+    let tokens = parse_statement("UNKNOWN_STATEMENT;");
+    assert_eq!(tokens, vec!["UNKNOWN_STATEMENT", ";"]);
+
+    let tokens = parse_statement("LONG_IDENTIFIER_ CONTINUED_PART;");
+    assert_eq!(tokens, vec!["LONG_IDENTIFIER_CONTINUED_PART", ";"]);
+}
+
+#[test]
 fn test_parse_source() {
     let source = "DECLARE X FIXED;\n%INCLUDE 'example.pli';";
     let mut directives = HashMap::new();
 
     let result = parse_source(source, &mut directives).unwrap();
 
-    assert_eq!(result, vec![vec!["DECLARE", "X", "FIXED", ";"],]);
+    assert_eq!(result, vec![vec!["DECLARE", "X", "FIXED", ";"]]);
     assert!(directives.contains_key("%INCLUDE 'example.pli';"));
     assert_eq!(
         directives["%INCLUDE 'example.pli';"],
         vec!["%INCLUDE", "'example.pli'", ";"]
     );
 }
- 

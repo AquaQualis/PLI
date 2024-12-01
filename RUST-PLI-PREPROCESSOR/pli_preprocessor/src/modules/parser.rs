@@ -20,7 +20,7 @@
 // -----------------------------------------------------------------------------
 // - parse_line: Tokenizes and categorizes a single line of PL/I source code.
 // - parse_source: Processes the entire PL/I source and extracts directives.
-// - handle_multiline: Handles multiline directives in the source.
+// - parse_statement: Parses a single statement into meaningful tokens.
 // - validate_syntax: Checks for basic syntax errors and consistency.
 //
 // -----------------------------------------------------------------------------
@@ -69,53 +69,79 @@ pub fn parse_line(line: &str) -> Vec<String> {
     let mut inside_quotes = false;
 
     for ch in line.chars() {
-        if ch == '\'' {
-            if inside_quotes {
-                buffer.push(ch); // Add the closing quote
-                tokens.push(buffer.clone());
-                buffer.clear();
-            } else {
+        match ch {
+            '\'' => {
+                if inside_quotes {
+                    buffer.push(ch);
+                    tokens.push(buffer.clone());
+                    buffer.clear();
+                } else {
+                    if !buffer.is_empty() {
+                        tokens.push(buffer.clone());
+                        buffer.clear();
+                    }
+                    buffer.push(ch);
+                }
+                inside_quotes = !inside_quotes;
+            }
+            _ if inside_quotes => buffer.push(ch),
+            ch if ch.is_whitespace() => {
                 if !buffer.is_empty() {
                     tokens.push(buffer.clone());
                     buffer.clear();
                 }
-                buffer.push(ch); // Start a quoted token
             }
-            inside_quotes = !inside_quotes;
-        } else if inside_quotes {
-            buffer.push(ch);
-        } else if ch.is_whitespace() {
-            if !buffer.is_empty() {
-                tokens.push(buffer.clone());
-                buffer.clear();
-            }
-        } else if ch == '%' && buffer.is_empty() {
-            buffer.push(ch); // Start a directive token
-        } else if buffer.starts_with('%') {
-            if ch.is_alphanumeric() {
-                buffer.push(ch); // Continue building the directive
-            } else {
-                tokens.push(buffer.trim().to_string());
-                buffer.clear();
-                if !ch.is_whitespace() {
-                    tokens.push(ch.to_string()); // Add punctuation as a separate token
+            '%' => {
+                if !buffer.is_empty() {
+                    tokens.push(buffer.clone());
+                    buffer.clear();
                 }
+                buffer.push(ch);
             }
-        } else if ch.is_ascii_punctuation() {
-            if !buffer.is_empty() {
-                tokens.push(buffer.clone());
-                buffer.clear();
+            ch if ch.is_alphanumeric() || ch == '_' => buffer.push(ch),
+            ch => {
+                if !buffer.is_empty() {
+                    tokens.push(buffer.clone());
+                    buffer.clear();
+                }
+                tokens.push(ch.to_string());
             }
-            tokens.push(ch.to_string());
-        } else {
-            buffer.push(ch);
         }
     }
 
     if !buffer.is_empty() {
-        tokens.push(buffer.clone());
+        tokens.push(buffer);
     }
 
+    tokens
+}
+
+/// Parses a single PL/I statement into meaningful tokens.
+///
+/// # Arguments
+/// - `statement`: A `&str` containing the statement.
+///
+/// # Returns
+/// - `Vec<String>`: Returns a vector of tokens representing the statement.
+///
+/// # Example
+/// ```rust
+/// let tokens = parse_statement("UNKNOWN_STATEMENT;");
+/// assert_eq!(tokens, vec!["UNKNOWN_STATEMENT", ";"]);
+/// ```
+pub fn parse_statement(statement: &str) -> Vec<String> {
+    let tokens: Vec<String> = parse_line(statement)
+        .iter()
+        .fold(Vec::new(), |mut acc, token| {
+            if let Some(last) = acc.last_mut() {
+                if token.starts_with('_') || last.ends_with('_') {
+                    last.push_str(token);
+                    return acc;
+                }
+            }
+            acc.push(token.clone());
+            acc
+        });
     tokens
 }
 
@@ -143,6 +169,7 @@ pub fn parse_source(
 
     for line in source.lines() {
         if line.trim().starts_with('%') {
+            // Capture directives separately
             directives.insert(line.to_string(), parse_line(line));
         } else {
             tokenized_lines.push(parse_line(line));
