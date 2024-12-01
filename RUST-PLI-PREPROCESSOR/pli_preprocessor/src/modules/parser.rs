@@ -2,27 +2,44 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // MODULE NAME: Parser
-// ----------------------------------------------------------------------------
-// DESCRIPTION:
+// -----------------------------------------------------------------------------
+// Description:
 // This module handles parsing of PL/I source code for tokenization and syntax
-// validation. It splits the source code into meaningful tokens and identifies
-// directives, statements, and expressions.
+// validation. It converts source code into meaningful tokens, validates syntax,
+// and provides a foundation for higher-level constructs like AST generation.
 //
-// FUNCTIONALITY:
-// - Parses raw PL/I source code into structured tokens.
-// - Distinguishes between directives, statements, and expressions.
-// - Handles multiline directives and concatenated strings.
-// - Ensures proper handling of escape sequences.
+// Features:
+// - Parsing PL/I source code into structured tokens.
+// - Identification and categorization of directives, statements, and expressions.
+// - Handling multiline directives and concatenated strings.
+// - Support for escape sequences and nested constructs.
+// - Validation of syntax and error reporting.
 //
-// USAGE:
-// - Use `parse_line` to tokenize and categorize a single line of code.
-// - Extend `parse_source` for processing entire files.
+// -----------------------------------------------------------------------------
+// FUNCTION INVENTORY:
+// -----------------------------------------------------------------------------
+// - parse_line: Tokenizes and categorizes a single line of PL/I source code.
+// - parse_source: Processes the entire PL/I source and extracts directives.
+// - handle_multiline: Handles multiline directives in the source.
+// - validate_syntax: Checks for basic syntax errors and consistency.
 //
-// AUTHOR: FirstLink Consulting Services (FLCS)
-// LICENSE: MIT License
-// DATE: 11/17/2024
-// VERSION: 1.0.2
+// -----------------------------------------------------------------------------
+// AUTHOR:
+// -----------------------------------------------------------------------------
+// - Jean-Pierre Sainfeld
+//
+// -----------------------------------------------------------------------------
+// ASSISTANT:
+// -----------------------------------------------------------------------------
+// - ChatGPT
+//
+// -----------------------------------------------------------------------------
+// COMPANY:
+// -----------------------------------------------------------------------------
+// - FirstLink Consulting Services (FLCS)
+// -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPORTS
@@ -148,3 +165,4 @@ pub fn parse_source(
 
     Ok(tokenized_lines)
 }
+

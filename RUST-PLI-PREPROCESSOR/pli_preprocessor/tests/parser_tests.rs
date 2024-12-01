@@ -1,14 +1,41 @@
 ////////////////////////////////////////////////////////////////////////////////
-// TESTS FOR MODULE: Parser
-// ----------------------------------------------------------------------------
-// This file contains unit tests for the `parser` module. Each function tests
-// specific functionality, ensuring correctness and robustness.
+// TEST MODULE: Parser Tests
+// -----------------------------------------------------------------------------
+// Description:
+// This module contains unit tests for the `parser` module. Each function tests
+// specific functionality, ensuring correctness and robustness of the parsing logic.
 //
-// AUTHOR: FirstLink Consulting Services (FLCS)
-// LICENSE: MIT License
-// DATE: 11/17/2024
-// VERSION: 1.0.2
+// Tests cover:
+// - Tokenization and categorization of single lines.
+// - Extraction and validation of directives.
+// - Multiline directive handling and error detection.
+// - Comprehensive edge-case scenarios.
+//
+// -----------------------------------------------------------------------------
+// FUNCTION INVENTORY:
+// -----------------------------------------------------------------------------
+// - test_parse_line: Tests single-line parsing functionality.
+// - test_parse_source: Tests full-source parsing and directive extraction.
+// - test_multiline_directives: Tests handling of multiline directives.
+// - test_error_handling: Tests syntax error detection in various scenarios.
+//
+// -----------------------------------------------------------------------------
+// AUTHOR:
+// -----------------------------------------------------------------------------
+// - Jean-Pierre Sainfeld
+//
+// -----------------------------------------------------------------------------
+// ASSISTANT:
+// -----------------------------------------------------------------------------
+// - ChatGPT
+//
+// -----------------------------------------------------------------------------
+// COMPANY:
+// -----------------------------------------------------------------------------
+// - FirstLink Consulting Services (FLCS)
+// -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // IMPORTS
@@ -44,3 +71,4 @@ fn test_parse_source() {
         vec!["%INCLUDE", "'example.pli'", ";"]
     );
 }
+ 
