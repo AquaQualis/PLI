@@ -5,23 +5,23 @@
 // -----------------------------------------------------------------------------
 // Description:
 // This module handles parsing of PL/I source code for tokenization and syntax
-// validation. It converts source code into meaningful tokens, validates syntax,
-// and provides a foundation for higher-level constructs like AST generation.
+// validation. It processes control structures, validates syntax, and provides
+// a foundation for higher-level constructs like AST generation.
 //
 // Features:
-// - Parsing PL/I source code into structured tokens.
-// - Identification and categorization of directives, statements, and expressions.
-// - Handling multiline directives and concatenated strings.
-// - Support for escape sequences and nested constructs.
-// - Validation of syntax and error reporting.
+// - Parsing control structures (e.g., DO, IF/THEN/ELSE, SELECT).
+// - Handling nested constructs using a stack or recursion.
+// - Syntax validation for matched constructs.
+// - Support for multiline directives and escape sequences.
 //
 // -----------------------------------------------------------------------------
 // FUNCTION INVENTORY:
 // -----------------------------------------------------------------------------
 // - parse_line: Tokenizes and categorizes a single line of PL/I source code.
 // - parse_source: Processes the entire PL/I source and extracts directives.
-// - parse_statement: Parses a single statement into meaningful tokens.
-// - validate_syntax: Checks for basic syntax errors and consistency.
+// - parse_control_structure: Parses and validates control structures.
+// - parse_statement: Parses a single PL/I statement into meaningful tokens.
+// - validate_syntax: Checks for syntax errors and consistency.
 //
 // -----------------------------------------------------------------------------
 // AUTHOR:
@@ -130,7 +130,7 @@ pub fn parse_line(line: &str) -> Vec<String> {
 /// assert_eq!(tokens, vec!["UNKNOWN_STATEMENT", ";"]);
 /// ```
 pub fn parse_statement(statement: &str) -> Vec<String> {
-    let tokens: Vec<String> = parse_line(statement)
+    parse_line(statement)
         .iter()
         .fold(Vec::new(), |mut acc, token| {
             if let Some(last) = acc.last_mut() {
@@ -141,9 +141,38 @@ pub fn parse_statement(statement: &str) -> Vec<String> {
             }
             acc.push(token.clone());
             acc
-        });
-    tokens
+        })
 }
+
+/// Parses control structures (e.g., DO/END) and validates their syntax.
+///
+/// # Arguments
+/// - `tokens`: A `Vec<String>` representing tokens of a control structure.
+///
+/// # Returns
+/// - `Result<(), String>`: Returns `Ok(())` if the structure is valid, or an error message if invalid.
+pub fn parse_control_structure(tokens: Vec<String>) -> Result<(), String> {
+    let mut stack = Vec::new();
+
+    for token in tokens {
+        match token.as_str() {
+            "DO" => stack.push(token.clone()), // Push owned value into the stack
+            "END" => {
+                if stack.pop() != Some("DO".to_string()) {
+                    return Err("Unmatched END".to_string());
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if !stack.is_empty() {
+        Err("Unclosed DO".to_string())
+    } else {
+        Ok(())
+    }
+}
+
 
 /// Parses the entire PL/I source code into structured tokens.
 ///
