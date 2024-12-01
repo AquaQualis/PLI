@@ -40,7 +40,6 @@
 // -----------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // IMPORTS
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,66 +68,54 @@ pub fn parse_line(line: &str) -> Vec<String> {
     let mut buffer = String::new();
     let mut inside_quotes = false;
 
-    println!("Parsing line: {:?}", line); // Debug: Show the input line
-
     for ch in line.chars() {
-        println!("Processing character: {:?}", ch); // Debug: Show each character
-
         if ch == '\'' {
-            println!("Quote encountered. Inside quotes: {}", inside_quotes); // Debug: Quote state
             if inside_quotes {
                 buffer.push(ch); // Add the closing quote
                 tokens.push(buffer.clone());
-                println!("Token added (quoted): {:?}", buffer); // Debug: Quoted token
                 buffer.clear();
             } else {
                 if !buffer.is_empty() {
                     tokens.push(buffer.clone());
-                    println!("Token added (before quote): {:?}", buffer); // Debug: Token before quote
                     buffer.clear();
                 }
-                buffer.push(ch); // Start a new quoted token
+                buffer.push(ch); // Start a quoted token
             }
             inside_quotes = !inside_quotes;
         } else if inside_quotes {
             buffer.push(ch);
         } else if ch.is_whitespace() {
-            println!("Whitespace encountered. Current buffer: {:?}", buffer); // Debug: Whitespace
             if !buffer.is_empty() {
                 tokens.push(buffer.clone());
-                println!("Token added (whitespace): {:?}", buffer); // Debug: Token after whitespace
                 buffer.clear();
             }
         } else if ch == '%' && buffer.is_empty() {
             buffer.push(ch); // Start a directive token
         } else if buffer.starts_with('%') {
-            buffer.push(ch);
-            if ch.is_whitespace() || ch.is_ascii_punctuation() {
+            if ch.is_alphanumeric() {
+                buffer.push(ch); // Continue building the directive
+            } else {
                 tokens.push(buffer.trim().to_string());
-                println!("Token added (directive): {:?}", buffer.trim()); // Debug: Directive token
                 buffer.clear();
+                if !ch.is_whitespace() {
+                    tokens.push(ch.to_string()); // Add punctuation as a separate token
+                }
             }
         } else if ch.is_ascii_punctuation() {
-            println!("Punctuation encountered: {:?}", ch); // Debug: Punctuation
             if !buffer.is_empty() {
                 tokens.push(buffer.clone());
-                println!("Token added (before punctuation): {:?}", buffer); // Debug: Token before punctuation
                 buffer.clear();
             }
             tokens.push(ch.to_string());
-            println!("Token added (punctuation): {:?}", ch); // Debug: Punctuation token
         } else {
             buffer.push(ch);
         }
     }
 
     if !buffer.is_empty() {
-        println!("Final token added: {:?}", buffer); // Debug: Final token
         tokens.push(buffer.clone());
-        buffer.clear(); // Clear the buffer
     }
 
-    println!("Tokens generated: {:?}", tokens); // Debug: Final token list
     tokens
 }
 
@@ -156,7 +143,6 @@ pub fn parse_source(
 
     for line in source.lines() {
         if line.trim().starts_with('%') {
-            // Capture directives separately
             directives.insert(line.to_string(), parse_line(line));
         } else {
             tokenized_lines.push(parse_line(line));
@@ -165,4 +151,3 @@ pub fn parse_source(
 
     Ok(tokenized_lines)
 }
-
