@@ -5,15 +5,16 @@
 // -----------------------------------------------------------------------------
 // Description:
 // This module handles parsing of PL/I source code for tokenization, syntax
-// validation, and expression parsing. It processes control structures,
-// validates syntax, and provides a foundation for higher-level constructs like
-// AST generation.
+// validation, control structures, and expression parsing. It processes control
+// structures, validates syntax, and provides a foundation for higher-level
+// constructs like Abstract Syntax Tree (AST) generation.
 //
 // Features:
 // - Parsing control structures (e.g., DO, IF/THEN/ELSE, SELECT).
 // - Parsing and evaluating expressions with operator precedence.
 // - Handling nested constructs using a stack or recursion.
 // - Syntax validation for matched constructs and expressions.
+// - Support for multiline directives.
 //
 // -----------------------------------------------------------------------------
 // FUNCTION INVENTORY:
@@ -23,6 +24,7 @@
 // - parse_source: Processes the entire PL/I source and extracts directives.
 // - parse_control_structure: Parses and validates control structures.
 // - parse_expression: Parses and validates expressions with operator precedence.
+// - validate_expression: Validates expressions and ensures syntactic correctness.
 // - handle_multiline: Handles multiline directives in the source.
 // - validate_syntax: Checks for syntax errors and consistency.
 //
@@ -52,78 +54,6 @@ use std::collections::HashMap;
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
-
-/// Parses an expression, respecting operator precedence.
-///
-/// # Arguments
-/// - `tokens`: A `&[String]` slice representing the tokens of the expression.
-///
-/// # Returns
-/// - `Result<Vec<String>, String>`: Returns a vector of tokens in reverse Polish
-///   notation (RPN) for evaluation, or an error message if parsing fails.
-///
-/// # Example
-/// ```rust
-/// let tokens = vec!["(", "A", "+", "B", ")", "*", "C"];
-/// let rpn = parse_expression(&tokens).unwrap();
-/// assert_eq!(rpn, vec!["A", "B", "+", "C", "*"]);
-/// ```
-pub fn parse_expression(tokens: &[String]) -> Result<Vec<String>, String> {
-    let mut output: Vec<String> = Vec::new();
-    let mut operators: Vec<String> = Vec::new();
-
-    // Operator precedence table
-    let precedence: HashMap<&str, u8> = HashMap::from([
-        ("*", 3),
-        ("/", 3),
-        ("+", 2),
-        ("-", 2),
-        ("AND", 1),
-        ("OR", 1),
-    ]);
-
-    for token in tokens {
-        match token.as_str() {
-            // If token is an operand, add it to the output
-            t if t.chars().all(char::is_alphanumeric) => output.push(t.to_string()),
-            // If token is an operator
-            t if precedence.contains_key(t) => {
-                while let Some(op) = operators.last() {
-                    if precedence.get(op.as_str()) >= precedence.get(t) {
-                        output.push(operators.pop().unwrap());
-                    } else {
-                        break;
-                    }
-                }
-                operators.push(t.to_string());
-            }
-            // Handle parentheses
-            "(" => operators.push(token.to_string()),
-            ")" => {
-                while let Some(op) = operators.pop() {
-                    if op == "(" {
-                        break;
-                    }
-                    output.push(op);
-                }
-            }
-            // Invalid token
-            _ => return Err(format!("Invalid token in expression: {}", token)),
-        }
-    }
-
-    // Pop remaining operators to the output
-    while let Some(op) = operators.pop() {
-        if op == "(" || op == ")" {
-            return Err("Mismatched parentheses in expression.".to_string());
-        }
-        output.push(op);
-    }
-
-    Ok(output)
-}
-
-
 
 /// Parses a single line of PL/I source code into tokens.
 ///
@@ -231,7 +161,7 @@ pub fn parse_control_structure(tokens: Vec<String>) -> Result<(), String> {
 
     for token in tokens {
         match token.as_str() {
-            "DO" => stack.push(token.clone()), // Push owned value into the stack
+            "DO" => stack.push(token.clone()),
             "END" => {
                 if stack.pop() != Some("DO".to_string()) {
                     return Err("Unmatched END".to_string());
@@ -246,6 +176,119 @@ pub fn parse_control_structure(tokens: Vec<String>) -> Result<(), String> {
     } else {
         Ok(())
     }
+}
+
+/// Parses an expression, respecting operator precedence.
+///
+/// # Arguments
+/// - `tokens`: A `&[String]` slice representing the tokens of the expression.
+///
+/// # Returns
+/// - `Result<Vec<String>, String>`: Returns a vector of tokens in reverse Polish
+///   notation (RPN) for evaluation, or an error message if parsing fails.
+///
+/// # Example
+/// ```rust
+/// let tokens = vec!["(", "A", "+", "B", ")", "*", "C"];
+/// let rpn = parse_expression(&tokens).unwrap();
+/// assert_eq!(rpn, vec!["A", "B", "+", "C", "*"]);
+/// ```
+pub fn parse_expression(tokens: &[String]) -> Result<Vec<String>, String> {
+    let mut output: Vec<String> = Vec::new();
+    let mut operators: Vec<String> = Vec::new();
+
+    let precedence: HashMap<&str, u8> = HashMap::from([
+        ("*", 3),
+        ("/", 3),
+        ("+", 2),
+        ("-", 2),
+        ("AND", 1),
+        ("OR", 1),
+    ]);
+
+    for token in tokens {
+        match token.as_str() {
+            t if t.chars().all(char::is_alphanumeric) => output.push(t.to_string()),
+            t if precedence.contains_key(t) => {
+                while let Some(op) = operators.last() {
+                    if precedence.get(op.as_str()) >= precedence.get(t) {
+                        output.push(operators.pop().unwrap());
+                    } else {
+                        break;
+                    }
+                }
+                operators.push(t.to_string());
+            }
+            "(" => operators.push(token.to_string()),
+            ")" => {
+                while let Some(op) = operators.pop() {
+                    if op == "(" {
+                        break;
+                    }
+                    output.push(op);
+                }
+            }
+            _ => return Err(format!("Invalid token in expression: {}", token)),
+        }
+    }
+
+    while let Some(op) = operators.pop() {
+        if op == "(" || op == ")" {
+            return Err("Mismatched parentheses in expression.".to_string());
+        }
+        output.push(op);
+    }
+
+    Ok(output)
+}
+
+/// Validates an expression for syntax correctness.
+///
+/// # Arguments
+/// - `tokens`: A `&[String]` slice representing the tokens of the expression.
+///
+/// # Returns
+/// - `Result<(), String>`: Returns `Ok(())` if the expression is valid,
+///   or an error message if validation fails.
+///
+/// # Example
+/// ```rust
+/// let tokens = vec!["(", "A", "+", "B", ")", "*", "C"];
+/// assert!(validate_expression(&tokens).is_ok());
+/// let invalid_tokens = vec!["A", "+", "*", "B"];
+/// assert!(validate_expression(&invalid_tokens).is_err());
+/// ```
+pub fn validate_expression(tokens: &[String]) -> Result<(), String> {
+    let mut parentheses_stack: Vec<char> = Vec::new();
+    let valid_operators = ["+", "-", "*", "/", "AND", "OR"];
+    let mut last_token: Option<&str> = None;
+
+    for token in tokens {
+        match token.as_str() {
+            "(" => parentheses_stack.push('('),
+            ")" => {
+                if parentheses_stack.pop().is_none() {
+                    return Err("Unmatched closing parenthesis".to_string());
+                }
+            }
+            t if valid_operators.contains(&t) => {
+                if let Some(last) = last_token {
+                    if valid_operators.contains(&last) || last == "(" {
+                        return Err(format!("Invalid operator placement: '{}'", t));
+                    }
+                }
+            }
+            t if t.chars().all(char::is_alphanumeric) => { /* Valid operand */ }
+            _ => return Err(format!("Invalid token in expression: '{}'", token)),
+        }
+        last_token = Some(token.as_str());
+    }
+
+    if !parentheses_stack.is_empty() {
+        return Err("Unmatched opening parenthesis".to_string());
+    }
+
+    Ok(())
 }
 
 
@@ -273,7 +316,6 @@ pub fn parse_source(
 
     for line in source.lines() {
         if line.trim().starts_with('%') {
-            // Capture directives separately
             directives.insert(line.to_string(), parse_line(line));
         } else {
             tokenized_lines.push(parse_line(line));
