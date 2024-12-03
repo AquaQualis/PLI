@@ -4,23 +4,26 @@
 // MODULE NAME: Parser
 // -----------------------------------------------------------------------------
 // Description:
-// This module handles parsing of PL/I source code for tokenization and syntax
-// validation. It processes control structures, validates syntax, and provides
-// a foundation for higher-level constructs like AST generation.
+// This module handles parsing of PL/I source code for tokenization, syntax
+// validation, and expression parsing. It processes control structures,
+// validates syntax, and provides a foundation for higher-level constructs like
+// AST generation.
 //
 // Features:
 // - Parsing control structures (e.g., DO, IF/THEN/ELSE, SELECT).
+// - Parsing and evaluating expressions with operator precedence.
 // - Handling nested constructs using a stack or recursion.
-// - Syntax validation for matched constructs.
-// - Support for multiline directives and escape sequences.
+// - Syntax validation for matched constructs and expressions.
 //
 // -----------------------------------------------------------------------------
 // FUNCTION INVENTORY:
 // -----------------------------------------------------------------------------
 // - parse_line: Tokenizes and categorizes a single line of PL/I source code.
+// - parse_statement: Processes single-line PL/I statements.
 // - parse_source: Processes the entire PL/I source and extracts directives.
 // - parse_control_structure: Parses and validates control structures.
-// - parse_statement: Parses a single PL/I statement into meaningful tokens.
+// - parse_expression: Parses and validates expressions with operator precedence.
+// - handle_multiline: Handles multiline directives in the source.
 // - validate_syntax: Checks for syntax errors and consistency.
 //
 // -----------------------------------------------------------------------------
@@ -49,6 +52,78 @@ use std::collections::HashMap;
 ////////////////////////////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////
+
+/// Parses an expression, respecting operator precedence.
+///
+/// # Arguments
+/// - `tokens`: A `&[String]` slice representing the tokens of the expression.
+///
+/// # Returns
+/// - `Result<Vec<String>, String>`: Returns a vector of tokens in reverse Polish
+///   notation (RPN) for evaluation, or an error message if parsing fails.
+///
+/// # Example
+/// ```rust
+/// let tokens = vec!["(", "A", "+", "B", ")", "*", "C"];
+/// let rpn = parse_expression(&tokens).unwrap();
+/// assert_eq!(rpn, vec!["A", "B", "+", "C", "*"]);
+/// ```
+pub fn parse_expression(tokens: &[String]) -> Result<Vec<String>, String> {
+    let mut output: Vec<String> = Vec::new();
+    let mut operators: Vec<String> = Vec::new();
+
+    // Operator precedence table
+    let precedence: HashMap<&str, u8> = HashMap::from([
+        ("*", 3),
+        ("/", 3),
+        ("+", 2),
+        ("-", 2),
+        ("AND", 1),
+        ("OR", 1),
+    ]);
+
+    for token in tokens {
+        match token.as_str() {
+            // If token is an operand, add it to the output
+            t if t.chars().all(char::is_alphanumeric) => output.push(t.to_string()),
+            // If token is an operator
+            t if precedence.contains_key(t) => {
+                while let Some(op) = operators.last() {
+                    if precedence.get(op.as_str()) >= precedence.get(t) {
+                        output.push(operators.pop().unwrap());
+                    } else {
+                        break;
+                    }
+                }
+                operators.push(t.to_string());
+            }
+            // Handle parentheses
+            "(" => operators.push(token.to_string()),
+            ")" => {
+                while let Some(op) = operators.pop() {
+                    if op == "(" {
+                        break;
+                    }
+                    output.push(op);
+                }
+            }
+            // Invalid token
+            _ => return Err(format!("Invalid token in expression: {}", token)),
+        }
+    }
+
+    // Pop remaining operators to the output
+    while let Some(op) = operators.pop() {
+        if op == "(" || op == ")" {
+            return Err("Mismatched parentheses in expression.".to_string());
+        }
+        output.push(op);
+    }
+
+    Ok(output)
+}
+
+
 
 /// Parses a single line of PL/I source code into tokens.
 ///

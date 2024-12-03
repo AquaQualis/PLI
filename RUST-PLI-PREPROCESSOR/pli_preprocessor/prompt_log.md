@@ -65,6 +65,26 @@ Be updated or added when functions are modified."
 Comprehensive Function Inventory
 Every module should include a function inventory at the top, listing all functions and their roles. This inventory should be updated with every significant change.
 
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTION: <Function/Test Name>
+// -----------------------------------------------------------------------------
+// Description:
+// <Brief description of the purpose and functionality of the function/test>.
+//
+// Example:
+// - What scenarios does this test cover, or what functionality does this
+//   function implement?
+//
+// Inputs:
+// - `parameter1` (`type`): <Description>
+// - `parameter2` (`type`): <Description>
+//
+// Outputs:
+// - `type`: <Description>
+//
+// -----------------------------------------------------------------------------
+
+
 Example Function Inventory for tokenizer.rs:
 rust
 Copy code
