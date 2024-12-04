@@ -58,9 +58,12 @@ use std::collections::HashMap;
 /// Represents an error encountered during parsing.
 #[derive(Debug)]
 pub struct ParseError {
-    pub line: usize,           ///< Line number where the error occurred.
-    pub token: Option<String>, ///< Token associated with the error (if any).
-    pub description: String,   ///< Description of the error.
+    ///< Line number where the error occurred.
+    pub line: usize, 
+    ///< Token associated with the error (if any).          
+    pub token: Option<String>, 
+    ///< Description of the error.
+    pub description: String,   
 }
 
 ////////////////////////////////////////////////////////////////////////////////
