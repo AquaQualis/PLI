@@ -58,9 +58,9 @@ use std::collections::HashMap;
 /// Represents an error encountered during parsing.
 #[derive(Debug)]
 pub struct ParseError {
-    pub line: usize,
-    pub token: Option<String>,
-    pub description: String,
+    pub line: usize,           ///< Line number where the error occurred.
+    pub token: Option<String>, ///< Token associated with the error (if any).
+    pub description: String,   ///< Description of the error.
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -68,6 +68,12 @@ pub struct ParseError {
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Parses a single line of PL/I source code into tokens.
+///
+/// # Arguments
+/// - `line`: A string slice containing the line of source code.
+///
+/// # Returns
+/// - `Vec<String>`: A vector of tokens parsed from the line.
 pub fn parse_line(line: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     let mut buffer = String::new();
@@ -122,6 +128,12 @@ pub fn parse_line(line: &str) -> Vec<String> {
 }
 
 /// Parses a single PL/I statement into meaningful tokens.
+///
+/// # Arguments
+/// - `statement`: A string slice containing the statement.
+///
+/// # Returns
+/// - `Vec<String>`: A vector of tokens parsed from the statement.
 pub fn parse_statement(statement: &str) -> Vec<String> {
     parse_line(statement)
         .iter()
@@ -138,6 +150,12 @@ pub fn parse_statement(statement: &str) -> Vec<String> {
 }
 
 /// Parses control structures (e.g., DO/END) and validates their syntax.
+///
+/// # Arguments
+/// - `tokens`: A vector of tokens representing the control structure.
+///
+/// # Returns
+/// - `Result<(), String>`: `Ok(())` if valid, or an error message if invalid.
 pub fn parse_control_structure(tokens: Vec<String>) -> Result<(), String> {
     let mut stack = Vec::new();
 
@@ -161,6 +179,13 @@ pub fn parse_control_structure(tokens: Vec<String>) -> Result<(), String> {
 }
 
 /// Parses an expression, respecting operator precedence.
+///
+/// # Arguments
+/// - `tokens`: A slice of tokens representing the expression.
+///
+/// # Returns
+/// - `Result<Vec<String>, String>`: A vector of tokens in Reverse Polish Notation (RPN),
+///   or an error message if parsing fails.
 pub fn parse_expression(tokens: &[String]) -> Result<Vec<String>, String> {
     let mut output: Vec<String> = Vec::new();
     let mut operators: Vec<String> = Vec::new();
@@ -211,6 +236,12 @@ pub fn parse_expression(tokens: &[String]) -> Result<Vec<String>, String> {
 }
 
 /// Validates an expression for syntax correctness.
+///
+/// # Arguments
+/// - `tokens`: A slice of tokens representing the expression.
+///
+/// # Returns
+/// - `Result<(), String>`: `Ok(())` if the expression is valid, or an error message if invalid.
 pub fn validate_expression(tokens: &[String]) -> Result<(), String> {
     let mut parentheses_stack: Vec<char> = Vec::new();
     let valid_operators = ["+", "-", "*", "/", "AND", "OR"];
@@ -245,6 +276,13 @@ pub fn validate_expression(tokens: &[String]) -> Result<(), String> {
 }
 
 /// Parses the entire PL/I source code into structured tokens.
+///
+/// # Arguments
+/// - `source`: A string slice containing the entire source code.
+/// - `directives`: A mutable reference to a `HashMap` for storing directives.
+///
+/// # Returns
+/// - `Result<Vec<Vec<String>>, String>`: A vector of tokenized lines, or an error message.
 pub fn parse_source(
     source: &str,
     directives: &mut HashMap<String, Vec<String>>,
@@ -263,6 +301,9 @@ pub fn parse_source(
 }
 
 /// Logs a parsing error for debugging purposes.
+///
+/// # Arguments
+/// - `error`: A reference to a `ParseError` instance.
 pub fn log_error(error: &ParseError) {
     println!(
         "Parse Error at line {}: {} - {:?}",
@@ -271,6 +312,12 @@ pub fn log_error(error: &ParseError) {
 }
 
 /// Attempts to recover from a parsing error.
+///
+/// # Arguments
+/// - `error`: A reference to a `ParseError` instance.
+///
+/// # Returns
+/// - `Option<String>`: A recovery suggestion, or `None` if no suggestion is available.
 pub fn recover_from_error(error: &ParseError) -> Option<String> {
     match error.description.as_str() {
         "Unmatched closing parenthesis" => Some("Add the missing opening parenthesis.".to_string()),
