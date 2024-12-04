@@ -8,7 +8,6 @@
 // Tests cover:
 // - Tokenization and categorization of single lines.
 // - Extraction and validation of directives.
-// - Multiline directive handling and error detection.
 // - Parsing of control structures like DO, IF/THEN/ELSE, and SELECT.
 // - Parsing of expressions, including operator precedence and associativity.
 // - Validation of expressions.
@@ -58,6 +57,10 @@ use std::collections::HashMap;
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Tests the `parse_line` function for single-line parsing functionality.
+///
+/// # Test Cases
+/// - Valid single-line PL/I source code.
+/// - Single-line PL/I source with leading/trailing spaces.
 #[test]
 fn test_parse_line() {
     let tokens = parse_line("DECLARE X FIXED;");
@@ -68,6 +71,10 @@ fn test_parse_line() {
 }
 
 /// Tests the `parse_source` function for full-source parsing and directive extraction.
+///
+/// # Test Cases
+/// - Valid source with directives.
+/// - Source with mixed statements and directives.
 #[test]
 fn test_parse_source() {
     let source = "DECLARE X FIXED;\n%INCLUDE 'example.pli';";
@@ -84,6 +91,10 @@ fn test_parse_source() {
 }
 
 /// Tests the `parse_statement` function for single-statement parsing logic.
+///
+/// # Test Cases
+/// - Valid single-part statement.
+/// - Valid multi-part statement.
 #[test]
 fn test_parse_statement() {
     let tokens = parse_statement("UNKNOWN_STATEMENT;");
@@ -94,8 +105,15 @@ fn test_parse_statement() {
 }
 
 /// Tests the `parse_control_structure` function for control structure parsing and validation.
+///
+/// # Test Cases
+/// - Valid DO/END structure.
+/// - Nested DO/END structure.
+/// - DO statement without a matching END.
+/// - END statement without a matching DO.
 #[test]
 fn test_parse_control_structure() {
+    // Valid DO/END structure
     let tokens = vec![
         "DO".to_string(),
         "I".to_string(),
@@ -108,24 +126,129 @@ fn test_parse_control_structure() {
         ";".to_string(),
     ];
     assert!(parse_control_structure(tokens).is_ok());
+
+    // Nested DO/END structure
+    let tokens = vec![
+        "DO".to_string(),
+        "J".to_string(),
+        "=".to_string(),
+        "1".to_string(),
+        "TO".to_string(),
+        "5".to_string(),
+        ";".to_string(),
+        "DO".to_string(),
+        "K".to_string(),
+        "=".to_string(),
+        "1".to_string(),
+        "TO".to_string(),
+        "10".to_string(),
+        ";".to_string(),
+        "END".to_string(),
+        ";".to_string(),
+        "END".to_string(),
+        ";".to_string(),
+    ];
+    assert!(parse_control_structure(tokens).is_ok());
+
+    // Missing END
+    let tokens = vec![
+        "DO".to_string(),
+        "I".to_string(),
+        "=".to_string(),
+        "1".to_string(),
+        "TO".to_string(),
+        "10".to_string(),
+        ";".to_string(),
+    ];
+    assert!(parse_control_structure(tokens).is_err());
+
+    // Unmatched END
+    let tokens = vec!["END".to_string(), ";".to_string()];
+    assert!(parse_control_structure(tokens).is_err());
 }
 
 /// Tests the `parse_expression` function for parsing expressions with operator precedence.
+///
+/// # Test Cases
+/// - Simple arithmetic expressions.
+/// - Expressions with operator precedence.
+/// - Expressions with parentheses.
+/// - Invalid expressions with unmatched parentheses.
+/// - Invalid expressions with unsupported tokens.
 #[test]
 fn test_parse_expression() {
+    // Test simple arithmetic
     let tokens = vec!["A".to_string(), "+".to_string(), "B".to_string()];
     let result = parse_expression(&tokens).unwrap();
     assert_eq!(result, vec!["A", "B", "+"]);
+
+    // Test operator precedence
+    let tokens = vec![
+        "A".to_string(),
+        "+".to_string(),
+        "B".to_string(),
+        "*".to_string(),
+        "C".to_string(),
+    ];
+    let result = parse_expression(&tokens).unwrap();
+    assert_eq!(result, vec!["A", "B", "C", "*", "+"]);
+
+    // Test parentheses
+    let tokens = vec![
+        "(".to_string(),
+        "A".to_string(),
+        "+".to_string(),
+        "B".to_string(),
+        ")".to_string(),
+        "*".to_string(),
+        "C".to_string(),
+    ];
+    let result = parse_expression(&tokens).unwrap();
+    assert_eq!(result, vec!["A", "B", "+", "C", "*"]);
+
+    // Test mismatched parentheses
+    let tokens = vec![
+        "(".to_string(),
+        "A".to_string(),
+        "+".to_string(),
+        "B".to_string(),
+    ];
+    assert!(parse_expression(&tokens).is_err());
+
+    // Test invalid token
+    let tokens = vec!["A".to_string(), "&".to_string(), "B".to_string()];
+    assert!(parse_expression(&tokens).is_err());
 }
 
 /// Tests the `validate_expression` function for validating expressions.
+///
+/// # Test Cases
+/// - Valid expressions.
+/// - Invalid expressions with unmatched parentheses.
+/// - Invalid expressions with misplaced operators.
 #[test]
 fn test_validate_expression() {
+    // Valid expressions
     let tokens = vec!["A".to_string(), "+".to_string(), "B".to_string()];
     assert!(validate_expression(&tokens).is_ok());
+
+    // Invalid expressions
+    let tokens = vec![
+        "(".to_string(),
+        "A".to_string(),
+        "+".to_string(),
+        "B".to_string(),
+    ];
+    assert!(validate_expression(&tokens).is_err());
+
+    let tokens = vec!["A".to_string(), "+".to_string(), "*".to_string(), "B".to_string()];
+    assert!(validate_expression(&tokens).is_err());
 }
 
 /// Tests the `log_error` function for error logging.
+///
+/// # Test Cases
+/// - Error is logged without causing a panic.
 #[test]
 fn test_log_error() {
     let error = ParseError {
@@ -137,6 +260,9 @@ fn test_log_error() {
 }
 
 /// Tests the `recover_from_error` function for generating recovery suggestions.
+///
+/// # Test Cases
+/// - Error descriptions generate appropriate suggestions.
 #[test]
 fn test_recover_from_error() {
     let error = ParseError {
