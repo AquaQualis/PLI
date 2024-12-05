@@ -46,6 +46,64 @@
 //!
 //! ---
 
+/*!
+\mainpage PL/I Preprocessor Project
+
+\section overview Overview
+The PL/I Preprocessor is designed to parse, validate, and preprocess PL/I source code, handling directives, expressions, and control structures to generate transformed output.
+
+\section features Features
+- Tokenizes and validates PL/I source lines.
+- Parses and processes preprocessor directives (e.g., `%INCLUDE`, `%IF`, `%DO`).
+- Supports advanced syntax validation, error handling, and recovery.
+- Modular design to facilitate maintainability and extensibility.
+
+\section parser_module Parser Module
+
+\subsection parser_features Features
+The `parser.rs` module provides the following functionalities:
+- Parsing control structures such as `DO`, `IF/THEN/ELSE`, and `SELECT`.
+- Parsing and evaluating expressions, respecting operator precedence.
+- Handling nested constructs using a stack or recursion.
+- Syntax validation and error recovery mechanisms.
+- Logging and reporting errors for debugging purposes.
+- Integration with higher-level modules to build an Abstract Syntax Tree (AST).
+
+\subsection parser_progress Current Progress
+The following steps have been completed:
+1. **Basic Tokenization:**
+   - Tokenizes single lines of PL/I source code into meaningful components.
+2. **Statement Parsing:**
+   - Processes single-line PL/I statements and validates their structure.
+3. **Control Structures:**
+   - Parses `DO` and `END` blocks with support for nested constructs.
+4. **Expression Parsing:**
+   - Implements reverse Polish notation (RPN) for operator precedence.
+   - Validates expressions for mismatched parentheses and invalid operator placement.
+5. **Error Handling and Recovery:**
+   - Logs errors and provides recovery suggestions.
+
+\subsection parser_next_steps Next Steps
+The following steps are planned:
+6. **Advanced Syntax Validation:**
+   - Add comprehensive validation for PL/I constructs, including type and structure checking.
+   - Validate complex expressions and nested directives.
+7. **AST Generation:**
+   - Develop an Abstract Syntax Tree (AST) representation of parsed input.
+   - Integrate AST with evaluator and output modules.
+8. **Performance Optimization:**
+   - Optimize parsing algorithms for large source files.
+   - Minimize memory usage and improve processing speed.
+9. **Macro Expansion and Include Handling:**
+   - Handle `%INCLUDE` directives and integrate external files seamlessly.
+   - Expand macros and substitute their values during parsing.
+
+\section contribution Contribution
+This project is a collaborative effort. Feedback and contributions are welcome. Reach out to FirstLink Consulting Services (FLCS) for inquiries and suggestions.
+
+*/
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
