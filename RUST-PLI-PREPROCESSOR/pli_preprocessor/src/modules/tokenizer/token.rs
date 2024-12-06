@@ -142,6 +142,35 @@ pub fn get_directive_category(directive: &str) -> DirectiveCategory {
     }
 }
 
+/// Finalizes the current token by pushing it to the token list and clearing it.
+///
+/// This function appends the `current_token` to the `tokens` list if it is not empty,
+/// and then resets the `current_token` to an empty state.
+///
+/// # Arguments
+/// - `current_token` - A mutable reference to the string representing the current token.
+/// - `tokens` - A mutable reference to the vector of tokens to which the finalized token will be added.
+///
+/// # Example
+/// ```rust
+/// let mut tokens = Vec::new();
+/// let mut current_token = String::from("example");
+/// finalize_token(&mut current_token, &mut tokens);
+/// assert_eq!(tokens.len(), 1);
+/// assert_eq!(tokens[0].value, "example");
+/// ```
+pub fn finalize_token(
+    current_token: &mut String, 
+    tokens: &mut Vec<Token>,
+    category:TokenCategory,
+) {
+    if !current_token.is_empty() {
+        tokens.push(Token::new(current_token.clone(), category, None));
+        current_token.clear();
+    }
+}
+
+
 
 /// Unit Test
 #[cfg(test)]
@@ -204,5 +233,56 @@ mod tests {
             Some(DirectiveCategory::ControlFlow),
         );
         assert_ne!(token1, token2); // Tokens with different data should not be equal.
+    }
+
+        /// @test Verifies that `finalize_token` correctly processes a non-empty token.
+        #[test]
+        fn test_finalize_non_empty_token() {
+            let mut tokens = Vec::new();
+            let mut current_token = String::from("TEST");
+    
+            finalize_token(&mut current_token, &mut tokens);
+    
+            assert_eq!(tokens.len(), 1);
+            assert_eq!(tokens[0].value, "TEST");
+            assert!(
+                current_token.is_empty(),
+                "Expected current_token to be cleared after finalization."
+            );
+        }
+    
+        /// @test Verifies that `finalize_token` does nothing for an empty token.
+        #[test]
+        fn test_finalize_empty_token() {
+            let mut tokens = Vec::new();
+            let mut current_token = String::new();
+    
+            finalize_token(&mut current_token, &mut tokens);
+    
+            assert!(tokens.is_empty(), "Expected tokens to remain empty.");
+            assert!(
+                current_token.is_empty(),
+                "Expected current_token to remain empty."
+            );
+        }
+    
+        /// @test Verifies that `finalize_token` can handle multiple consecutive calls.
+        #[test]
+        fn test_finalize_multiple_calls() {
+            let mut tokens = Vec::new();
+            let mut current_token1 = String::from("FIRST");
+            let mut current_token2 = String::from("SECOND");
+    
+            finalize_token(&mut current_token1, &mut tokens);
+            finalize_token(&mut current_token2, &mut tokens);
+    
+            assert_eq!(tokens.len(), 2);
+            assert_eq!(tokens[0].value, "FIRST");
+            assert_eq!(tokens[1].value, "SECOND");
+            assert!(
+                current_token1.is_empty() && current_token2.is_empty(),
+                "Expected both current_token1 and current_token2 to be cleared after finalization."
+            );
+        }
     }
 }
