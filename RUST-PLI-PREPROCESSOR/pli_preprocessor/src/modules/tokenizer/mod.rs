@@ -33,6 +33,6 @@
  
  // Explicitly re-export specific items to avoid ambiguity.
  pub use directive::get_directive_category;
- pub use token::{Token, TokenCategory};
+ pub use token::{Token, TokenCategory,DirectiveCategory};
  pub use utils::{to_uppercase, join_with_delimiter, is_blank, split_preserving_quotes};
  pub use tokenizer_logic::{tokenize_pli, has_tokenizer_error, is_valid_preprocessor_directive};

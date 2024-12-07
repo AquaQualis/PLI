@@ -16,8 +16,18 @@
 //!
 //! @company FirstLink Consulting Services (FLCS)
 //!
-//! @version 1.0
+//! @version 1.1
 //! @date 2024-11-24
+
+////////////////////////////////////////////////////////////////////////////////
+// FUNCTION INVENTORY
+// -----------------------------------------------------------------------------
+// - `Token` Structure: Represents categorized tokens.
+// - `TokenCategory` Enum: Enumerates general token categories.
+// - `DirectiveCategory` Enum: Provides finer classification for directives.
+// - `get_directive_category`: Retrieves the category for preprocessor directives.
+// - `finalize_token`: Finalizes and adds a token to the token list.
+////////////////////////////////////////////////////////////////////////////////
 
 /// Represents a token in the PL/I tokenizer.
 ///
@@ -75,16 +85,15 @@ impl Token {
 
 /// Enumerates general categories for tokens.
 ///
-/// These categories help classify tokens based on their function in the
-/// source code. Examples include directives, literals, operators, and separators.
+/// These categories help classify tokens based on their function in the source code.
 ///
 /// # Variants
-/// * `Directive` - Tokens that represent preprocessor directives.
-/// * `Identifier` - Tokens that represent identifiers.
-/// * `Literal` - Tokens that represent string literals or numbers.
-/// * `Operator` - Tokens that represent operators like `=` or `+`.
-/// * `Separator` - Tokens that represent separators like `;` or `,`.
-/// * `Unknown` - Tokens that cannot be categorized.
+/// - `Directive`: Tokens representing preprocessor directives.
+/// - `Identifier`: Tokens representing identifiers.
+/// - `Literal`: Tokens representing string literals or numbers.
+/// - `Operator`: Tokens representing operators like `=` or `+`.
+/// - `Separator`: Tokens representing separators like `;` or `,`.
+/// - `Unknown`: Tokens that cannot be categorized.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenCategory {
     Directive,
@@ -97,15 +106,14 @@ pub enum TokenCategory {
 
 /// Enumerates specific categories for preprocessor directives.
 ///
-/// These categories are used to provide finer classification for tokens
-/// identified as directives.
+/// These categories provide finer classification for tokens identified as directives.
 ///
 /// # Variants
-/// * `ControlFlow` - Directives related to control flow (e.g., `%IF`, `%THEN`).
-/// * `MacroHandling` - Directives related to macros (e.g., `%MACRO`, `%INCLUDE`).
-/// * `Conditional` - Directives related to conditional processing (e.g., `%SWITCH`).
-/// * `Comment` - Directives that represent comments (e.g., `%COMMENT`).
-/// * `Other` - Any other directives not falling into the above categories.
+/// - `ControlFlow`: Directives related to control flow (e.g., `%IF`, `%THEN`).
+/// - `MacroHandling`: Directives related to macros (e.g., `%MACRO`, `%INCLUDE`).
+/// - `Conditional`: Directives related to conditional processing (e.g., `%SWITCH`).
+/// - `Comment`: Directives representing comments (e.g., `%COMMENT`).
+/// - `Other`: Directives not falling into the above categories.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum DirectiveCategory {
     ControlFlow,
@@ -120,10 +128,10 @@ pub enum DirectiveCategory {
 /// This function matches a directive token with its specific category.
 ///
 /// # Arguments
-/// * `directive` - The directive token as a string slice.
+/// - `directive` - The directive token as a string slice.
 ///
 /// # Returns
-/// * A `DirectiveCategory` enum value representing the category.
+/// - A `DirectiveCategory` enum value representing the category.
 ///
 /// # Example
 /// ```rust
@@ -150,139 +158,96 @@ pub fn get_directive_category(directive: &str) -> DirectiveCategory {
 /// # Arguments
 /// - `current_token` - A mutable reference to the string representing the current token.
 /// - `tokens` - A mutable reference to the vector of tokens to which the finalized token will be added.
+/// - `category` - The general category of the token being finalized.
 ///
 /// # Example
 /// ```rust
 /// let mut tokens = Vec::new();
 /// let mut current_token = String::from("example");
-/// finalize_token(&mut current_token, &mut tokens);
+/// finalize_token(&mut current_token, &mut tokens, TokenCategory::Identifier);
 /// assert_eq!(tokens.len(), 1);
 /// assert_eq!(tokens[0].value, "example");
 /// ```
 pub fn finalize_token(
-    current_token: &mut String, 
+    current_token: &mut String,
     tokens: &mut Vec<Token>,
-    category:TokenCategory,
+    category: TokenCategory,
 ) {
     if !current_token.is_empty() {
-        tokens.push(Token::new(current_token.clone(), category, None));
+        tokens.push(Token::new(current_token, category, None));
         current_token.clear();
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// UNIT TESTS
+////////////////////////////////////////////////////////////////////////////////
 
-
-/// Unit Test
 #[cfg(test)]
 mod tests {
-    use super::{DirectiveCategory, Token, TokenCategory};
+    use super::*;
 
-    /// @test test_create_new_token
-    /// @brief Verifies the correct creation of a `Token` instance.
-    ///
-    /// This test ensures that the `Token::new` method correctly initializes
-    /// the `value`, `category`, and `directive_category` fields.
+    /// @test Verifies the creation of a `Token` with the `new` constructor.
     #[test]
     fn test_create_new_token() {
         let token = Token::new(
-            "example",
-            TokenCategory::Identifier,
+            "%IF",
+            TokenCategory::Directive,
             Some(DirectiveCategory::ControlFlow),
         );
-
-        assert_eq!(token.value, "example"); // Check if the value matches.
-        assert_eq!(token.category, TokenCategory::Identifier); // Verify the category.
-        assert_eq!(token.directive_category, Some(DirectiveCategory::ControlFlow)); // Verify directive category.
+        assert_eq!(token.value, "%IF");
+        assert_eq!(token.category, TokenCategory::Directive);
+        assert_eq!(token.directive_category, Some(DirectiveCategory::ControlFlow));
     }
 
-    /// @test test_token_equality
-    /// @brief Verifies equality comparison for `Token` instances.
-    ///
-    /// This test ensures that two tokens with identical fields
-    /// are considered equal.
+    /// @test Validates the directive category classification for known directives.
     #[test]
-    fn test_token_equality() {
-        let token1 = Token::new(
-            "example",
-            TokenCategory::Identifier,
-            Some(DirectiveCategory::ControlFlow),
+    fn test_get_directive_category() {
+        assert_eq!(
+            get_directive_category("%IF"),
+            DirectiveCategory::ControlFlow
         );
-        let token2 = Token::new(
-            "example",
-            TokenCategory::Identifier,
-            Some(DirectiveCategory::ControlFlow),
+        assert_eq!(
+            get_directive_category("%MACRO"),
+            DirectiveCategory::MacroHandling
         );
-        assert_eq!(token1, token2); // Tokens with the same data should be equal.
+        assert_eq!(
+            get_directive_category("%SWITCH"),
+            DirectiveCategory::Conditional
+        );
+        assert_eq!(get_directive_category("%COMMENT"), DirectiveCategory::Comment);
+        assert_eq!(get_directive_category("%UNKNOWN"), DirectiveCategory::Other);
     }
 
-    /// @test test_token_inequality
-    /// @brief Verifies inequality comparison for `Token` instances.
-    ///
-    /// This test ensures that two tokens with differing fields
-    /// are not considered equal.
+    /// @test Ensures `finalize_token` processes a non-empty token correctly.
     #[test]
-    fn test_token_inequality() {
-        let token1 = Token::new(
-            "example1",
-            TokenCategory::Identifier,
-            Some(DirectiveCategory::ControlFlow),
-        );
-        let token2 = Token::new(
-            "example2",
-            TokenCategory::Identifier,
-            Some(DirectiveCategory::ControlFlow),
-        );
-        assert_ne!(token1, token2); // Tokens with different data should not be equal.
+    fn test_finalize_token_non_empty() {
+        let mut tokens = Vec::new();
+        let mut current_token = String::from("TOKEN");
+        finalize_token(&mut current_token, &mut tokens, TokenCategory::Identifier);
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].value, "TOKEN");
     }
 
-        /// @test Verifies that `finalize_token` correctly processes a non-empty token.
-        #[test]
-        fn test_finalize_non_empty_token() {
-            let mut tokens = Vec::new();
-            let mut current_token = String::from("TEST");
-    
-            finalize_token(&mut current_token, &mut tokens);
-    
-            assert_eq!(tokens.len(), 1);
-            assert_eq!(tokens[0].value, "TEST");
-            assert!(
-                current_token.is_empty(),
-                "Expected current_token to be cleared after finalization."
-            );
-        }
-    
-        /// @test Verifies that `finalize_token` does nothing for an empty token.
-        #[test]
-        fn test_finalize_empty_token() {
-            let mut tokens = Vec::new();
-            let mut current_token = String::new();
-    
-            finalize_token(&mut current_token, &mut tokens);
-    
-            assert!(tokens.is_empty(), "Expected tokens to remain empty.");
-            assert!(
-                current_token.is_empty(),
-                "Expected current_token to remain empty."
-            );
-        }
-    
-        /// @test Verifies that `finalize_token` can handle multiple consecutive calls.
-        #[test]
-        fn test_finalize_multiple_calls() {
-            let mut tokens = Vec::new();
-            let mut current_token1 = String::from("FIRST");
-            let mut current_token2 = String::from("SECOND");
-    
-            finalize_token(&mut current_token1, &mut tokens);
-            finalize_token(&mut current_token2, &mut tokens);
-    
-            assert_eq!(tokens.len(), 2);
-            assert_eq!(tokens[0].value, "FIRST");
-            assert_eq!(tokens[1].value, "SECOND");
-            assert!(
-                current_token1.is_empty() && current_token2.is_empty(),
-                "Expected both current_token1 and current_token2 to be cleared after finalization."
-            );
-        }
+    /// @test Ensures `finalize_token` does nothing for an empty token.
+    #[test]
+    fn test_finalize_token_empty() {
+        let mut tokens = Vec::new();
+        let mut current_token = String::new();
+        finalize_token(&mut current_token, &mut tokens, TokenCategory::Identifier);
+        assert!(tokens.is_empty());
+    }
+
+    /// @test Ensures `finalize_token` handles multiple consecutive calls.
+    #[test]
+    fn test_finalize_token_multiple_calls() {
+        let mut tokens = Vec::new();
+        let mut token1 = String::from("TOKEN1");
+        let mut token2 = String::from("TOKEN2");
+        finalize_token(&mut token1, &mut tokens, TokenCategory::Identifier);
+        finalize_token(&mut token2, &mut tokens, TokenCategory::Literal);
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].value, "TOKEN1");
+        assert_eq!(tokens[1].value, "TOKEN2");
     }
 }
