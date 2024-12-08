@@ -43,9 +43,15 @@ pub fn handle_string_literal<I>(
 ) where
     I: Iterator<Item = char>,
 {
-    // Ensure the function starts with a quote
-    current_token.push('\''); // Start of string literal
-    debug!("Debug: Starting string literal: {}", current_token);
+    // Consume the opening quote
+    if let Some('\'') = chars.next() {
+        current_token.push('\''); // Start of string literal
+        debug!("Debug: Starting string literal: {}", current_token);
+    } else {
+        // Should not happen; the function should be called when a quote is encountered
+        debug!("Debug: No opening quote found; this should not happen.");
+        return;
+    }
 
     while let Some(&next_char) = chars.peek() {
         chars.next(); // Consume the character
@@ -98,6 +104,7 @@ pub fn handle_string_literal<I>(
 
 
 
+
 /// Unit tests for `handle_string_literal`.
 #[cfg(test)]
 mod tests {
@@ -113,24 +120,44 @@ mod tests {
     /// @test Verifies proper handling of a complete string literal.
     #[test]
     fn test_complete_string_literal() {
-        init_logger(); // Enable debug output
-
-        let input = "'complete string'"; // Define the input string
+        // Initialize logger for debug output
+        init_logger(); 
+    
+        // Define the input string and setup necessary variables
+        let input = "'complete string'"; 
         let mut chars = input.chars().peekable();
         let mut tokens = vec![];
         let mut current_token = String::new();
-
-        debug!("Test input: {}", input);
-
+    
+        debug!("Starting test with input: {}", input);
+    
         // Call the function being tested
         handle_string_literal(&mut chars, &mut tokens, &mut current_token);
-
-        debug!("Tokens generated: {:?}", tokens);
-
-        assert_eq!(tokens.len(), 1);
-        assert_eq!(tokens[0].value, "'complete string'");
-        assert_eq!(tokens[0].category, TokenCategory::Literal);
+    
+        // Log tokens generated for verification
+        debug!("Generated tokens: {:?}", tokens);
+    
+        // Assertions
+        assert_eq!(tokens.len(), 1, "Expected exactly one token for a complete string literal.");
+        assert_eq!(
+            tokens[0].value, 
+            "'complete string'",
+            "The token value should match the complete string literal."
+        );
+        assert_eq!(
+            tokens[0].category, 
+            TokenCategory::Literal,
+            "The token category should be TokenCategory::Literal."
+        );
+    
+        // Ensure no leftover data in current_token
+        assert!(
+            current_token.is_empty(),
+            "current_token should be empty after processing a complete string literal. Found: '{}'", 
+            current_token
+        );
     }
+    
 
     /// @test Ensures unmatched string literals are handled gracefully.
     #[test]

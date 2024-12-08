@@ -20,8 +20,27 @@
 //! @version 1.0
 //! @date 2024-11-24
 
-use log::Level;
-use crate::modules::tokenizer::token::{Token, TokenCategory};
+
+use log::{Level, LevelFilter};
+use fern::Dispatch;
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+pub fn initialize_logger() {
+    INIT.call_once(|| {
+        let _ = fern::Dispatch::new()
+            .level(LevelFilter::Debug) // Set maximum level to DEBUG
+            .level_for("pli_preprocessor", LevelFilter::Debug) // Scope-specific configuration
+            .chain(std::io::stdout())
+            .apply()
+            .map_err(|e| eprintln!("Logger initialization failed: {:?}", e));
+        println!("Logger initialized with max level: {:?}", LevelFilter::Debug);
+    });
+}
+
+
+
 
 /// Converts a string to uppercase.
 ///
@@ -198,8 +217,24 @@ mod tests {
     #[test]
     fn test_is_log_level_enabled() {
         initialize_logger();
+    
+        // Explicitly set log level defaults for the test
+        log::set_max_level(log::LevelFilter::Debug);
+    
+        // Debugging current logger state
+        eprintln!(
+            "Log levels: INFO: {}, DEBUG: {}, TRACE: {}",
+            is_log_level_enabled(Level::Info),
+            is_log_level_enabled(Level::Debug),
+            is_log_level_enabled(Level::Trace)
+        );
+    
         assert!(is_log_level_enabled(Level::Info), "INFO log level should be enabled.");
+        assert!(is_log_level_enabled(Level::Debug), "DEBUG log level should be enabled.");
+        assert!(!is_log_level_enabled(Level::Trace), "TRACE log level should not be enabled by default.");
     }
+    
+
 
     /// @test Test the `join_with_delimiter` function.
     #[test]
