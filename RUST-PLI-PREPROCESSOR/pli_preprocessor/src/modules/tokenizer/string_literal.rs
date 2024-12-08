@@ -13,6 +13,7 @@
 //! @date 2024-11-24
 
 use super::{Token, TokenCategory};
+use crate::modules::tokenizer::utils::initialize_logger; // Use the centralized logger
 use std::iter::Peekable;
 use log::debug;
 
@@ -97,71 +98,37 @@ pub fn handle_string_literal<I>(
     current_token.clear();
 }
 
-
-
-
-
-
-
-
-
-/// Unit tests for `handle_string_literal`.
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::modules::tokenizer::utils::initialize_logger; // Use the centralized logger
     use log::debug; // For debug logging
-    use env_logger; // To initialize the logger
-
-    // Initialize the logger before running tests
-    fn init_logger() {
-        let _ = env_logger::builder().is_test(true).try_init();
-    }
 
     /// @test Verifies proper handling of a complete string literal.
     #[test]
     fn test_complete_string_literal() {
-        // Initialize logger for debug output
-        init_logger(); 
-    
-        // Define the input string and setup necessary variables
+        initialize_logger(); // Centralized logger initialization
+
         let input = "'complete string'"; 
         let mut chars = input.chars().peekable();
         let mut tokens = vec![];
         let mut current_token = String::new();
     
         debug!("Starting test with input: {}", input);
-    
-        // Call the function being tested
         handle_string_literal(&mut chars, &mut tokens, &mut current_token);
-    
-        // Log tokens generated for verification
         debug!("Generated tokens: {:?}", tokens);
-    
-        // Assertions
+
         assert_eq!(tokens.len(), 1, "Expected exactly one token for a complete string literal.");
-        assert_eq!(
-            tokens[0].value, 
-            "'complete string'",
-            "The token value should match the complete string literal."
-        );
-        assert_eq!(
-            tokens[0].category, 
-            TokenCategory::Literal,
-            "The token category should be TokenCategory::Literal."
-        );
-    
-        // Ensure no leftover data in current_token
-        assert!(
-            current_token.is_empty(),
-            "current_token should be empty after processing a complete string literal. Found: '{}'", 
-            current_token
-        );
+        assert_eq!(tokens[0].value, "'complete string'");
+        assert_eq!(tokens[0].category, TokenCategory::Literal);
+        assert!(current_token.is_empty(), "current_token should be empty after processing.");
     }
-    
 
     /// @test Ensures unmatched string literals are handled gracefully.
     #[test]
     fn test_unmatched_string_literal() {
+        initialize_logger(); // Centralized logger initialization
+
         let mut chars = "'unmatched string".chars().peekable();
         let mut tokens = vec![];
         let mut current_token = String::new();
@@ -173,21 +140,18 @@ mod tests {
         assert_eq!(tokens[0].category, TokenCategory::Literal);
     }
 
-
     /// @test Verifies handling of an empty string literal.
     #[test]
     fn test_empty_string_literal() {
-        init_logger(); // Enable debug output
+        initialize_logger(); // Centralized logger initialization
 
-        let input = "''"; // Define the input string
+        let input = "''";
         let mut chars = input.chars().peekable();
         let mut tokens = vec![];
         let mut current_token = String::new();
 
         debug!("Test input: {}", input);
-
         handle_string_literal(&mut chars, &mut tokens, &mut current_token);
-
         debug!("Tokens generated: {:?}", tokens);
 
         assert_eq!(tokens.len(), 1);
