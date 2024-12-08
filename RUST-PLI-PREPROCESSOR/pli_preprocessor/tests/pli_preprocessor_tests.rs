@@ -39,7 +39,12 @@
 
 #[cfg(test)]
 mod tests {
-    use pli_preprocessor::modules::tokenizer::{tokenize_pli, DirectiveCategory, TokenCategory};
+    use pli_preprocessor::modules::tokenizer::{
+        tokenize_pli,              // Core tokenizer function
+        TokenCategory,             // Token category enum
+        DirectiveCategory,         // Directive category enum
+    };
+
 
     ////////////////////////////////////////////////////////////////////////////////
     // TEST: test_case_insensitivity

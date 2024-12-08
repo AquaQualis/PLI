@@ -16,7 +16,7 @@
 
 #[cfg(test)]
 mod tests {
-    use pli_tokenizer::modules::validator::{is_valid_directive, validate_syntax};
+    use pli_preprocessor::modules::validator::{is_valid_directive, validate_syntax};
 
     #[test]
     fn test_validate_syntax_basic() {

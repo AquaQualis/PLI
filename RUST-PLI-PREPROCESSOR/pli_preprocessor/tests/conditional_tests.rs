@@ -17,7 +17,7 @@
 
 #[cfg(test)]
 mod tests {
-    use pli_tokenizer::modules::conditional::{process_condition, validate_conditional_structure};
+    use pli_preprocessor::modules::conditional::{process_condition, validate_conditional_structure};
 
     #[test]
     fn test_process_condition_valid() {

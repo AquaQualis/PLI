@@ -7,10 +7,14 @@ edition = "2021"
 chrono = "0.4"
 fern = "0.7.0"
 log = "0.4.22"
-regex = "1.7" 
+regex = "1.7"
+env_logger = "0.10"  # Ensure this is in the main dependencies
 
+[dev-dependencies]
+rand = "0.8"  # Leave this here since it's likely for test purposes
 
 [lib]
 name = "pli_preprocessor"
 path = "src/lib.rs"  # Declare the library entry point
+
 

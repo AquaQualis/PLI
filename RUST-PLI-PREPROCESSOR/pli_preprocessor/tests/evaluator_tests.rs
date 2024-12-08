@@ -16,7 +16,7 @@
 
 #[cfg(test)]
 mod tests {
-    use pli_tokenizer::modules::evaluator::{
+    use pli_preprocessor::modules::evaluator::{
         evaluate_expression, evaluate_operator, parse_and_evaluate, tokenize_expression,
     };
 

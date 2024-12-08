@@ -10,7 +10,7 @@
 
 #[cfg(test)]
 mod tests {
-    use pli_tokenizer::modules::output::{append_log_message, write_line_to_file};
+    use pli_preprocessor::modules::output::{append_log_message, write_line_to_file};
     use std::fs;
     use std::path::Path;
 

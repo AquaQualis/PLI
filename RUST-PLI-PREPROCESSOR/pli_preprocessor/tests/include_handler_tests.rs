@@ -14,7 +14,7 @@
 // IMPORTS
 ////////////////////////////////////////////////////////////////////////////////
 
-use pli_tokenizer::modules::include_handler::*;
+use pli_preprocessor::modules::include_handler::*;
 use std::fs;
 use std::path::Path;
 
